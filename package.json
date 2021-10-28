@@ -1,0 +1,33 @@
+{
+  "name": "bedrock-portal",
+  "version": "0.0.1",
+  "description": "Creates a joinable session in Minecraft Bedrock Edition that can route players to their a specified host",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LucienHH/bedrock-portal.git"
+  },
+  "author": "Lucienn",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LucienHH/bedrock-portal/issues"
+  },
+  "homepage": "https://github.com/LucienHH/bedrock-portal#readme",
+  "dependencies": {
+    "axios": "^0.22.0",
+    "chalk": "^4.1.2",
+    "clear": "^0.1.0",
+    "clui": "^0.3.6",
+    "command-line-args": "^5.2.0",
+    "figlet": "^1.5.2",
+    "inquirer": "^8.2.0",
+    "minimist": "^1.2.5",
+    "moment": "^2.29.1",
+    "prismarine-auth": "^1.2.0",
+    "uuid": "^8.3.2",
+    "ws": "^8.2.3"
+  }
+}
