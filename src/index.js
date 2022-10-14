@@ -105,6 +105,10 @@ module.exports = class BedrockPortal extends EventEmitter {
 						system: {
 							active: true,
 							connection: connectionId,
+							subscription: {
+								id: this.session.subscriptionId,
+								changeTypes: ['everything'],
+							},
 						},
 					},
 				},
@@ -156,7 +160,7 @@ module.exports = class BedrockPortal extends EventEmitter {
 						joinTime: e.joinTime,
 						index: e.constants.system.index,
 						connectionId: e.properties.system.connection,
-						subscriptionId: e.properties.system.subscription.id,
+						subscriptionId: e.properties.system.subscription?.id,
 					},
 				};
 			});
