@@ -197,9 +197,9 @@ module.exports = class BedrockPortal extends EventEmitter {
 					closed: false,
 				},
 				custom: {
-					hostName: String(this.options.world?.hostName) ?? `${this.sessionOwner.gamertag}'s Portal`,
-					worldName: String(this.options.world?.name) ?? 'BedrockPortal',
-					version: String(this.options.world?.version) ?? require('../package.json').version,
+					hostName: String(this.options.world?.hostName) || `${this.sessionOwner.gamertag}'s Portal`,
+					worldName: String(this.options.world?.name) || 'BedrockPortal',
+					version: String(this.options.world?.version) || require('../package.json').version,
 					MemberCount: Number(this.options.world?.memberCount) ?? 0,
 					MaxMemberCount: Number(this.options.world?.maxMemberCount) ?? 10,
 					Joinability: joinability.joinability,
