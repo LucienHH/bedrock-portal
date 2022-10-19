@@ -145,6 +145,7 @@ module.exports = class BedrockPortal extends EventEmitter {
 
 			try {
 				await this.updateConnection(connectionId);
+				await this.updateHandle(this.#createHandleBody('activity'));
 			}
 			catch (e) {
 				debug('Failed to update connection, session may have been abandoned', e);
