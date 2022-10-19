@@ -19,7 +19,7 @@
   "dependencies": {
     "axios": "^1.0.0",
     "uuid": "^9.0.0",
-    "xbox-rta": "^0.0.8"
+    "xbox-rta": "^0.0.9"
   },
   "devDependencies": {
     "bedrock-portal": "file:.",
