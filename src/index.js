@@ -157,6 +157,8 @@ module.exports = class BedrockPortal extends EventEmitter {
 			this.emit('rtaEvent', { type, subId, data });
 			const session = await this.getSession();
 
+			debug('Received RTA event, session has been updated', session);
+
 			const sessionMembers = Object.keys(session.members).map(key => session.members[key]).filter(member => member.constants.system.xuid !== this.sessionOwner.xuid);
 			const xuids = sessionMembers.map(e => e.constants.system.xuid);
 
