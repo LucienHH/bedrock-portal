@@ -39,7 +39,6 @@ module.exports = class BedrockPortal extends EventEmitter {
 	}
 
 	async start() {
-
 		this.sessionOwner = await this.#rest.getXboxProfile('me');
 
 		if (!this.options.disableAltCheck) {
@@ -51,6 +50,16 @@ module.exports = class BedrockPortal extends EventEmitter {
 
 		const connectionId = await this.#rta.subscribe('https://sessiondirectory.xboxlive.com/connections/').then(e => e.data.ConnectionId);
 
+		const session = await this.createAndPublishSession(connectionId);
+
+		await this.#handleSessionEvents();
+
+		return session;
+	}
+
+	async createAndPublishSession(connectionId) {
+		this.players = [];
+
 		await this.updateSession(this.#createSessionBody(connectionId));
 
 		debug(`Created session, name: ${this.session.name}`);
@@ -60,8 +69,6 @@ module.exports = class BedrockPortal extends EventEmitter {
 		const session = await this.getSession();
 
 		await this.updateSession({ properties: session.properties });
-
-		await this.#handleSessionEvents();
 
 		debug(`Published session, name: ${this.session.name}`);
 
@@ -135,7 +142,14 @@ module.exports = class BedrockPortal extends EventEmitter {
 	async #handleSessionEvents() {
 		this.#rta.on('reconnect', async () => {
 			const connectionId = await this.#rta.subscribe('https://sessiondirectory.xboxlive.com/connections/').then(e => e.data.ConnectionId);
-			await this.updateConnection(connectionId);
+
+			try {
+				await this.updateConnection(connectionId);
+			}
+			catch (e) {
+				debug('Failed to update connection, session may have been abandoned', e);
+				await this.createAndPublishSession(connectionId);
+			}
 		});
 
 		this.#rta.on('event', async ({ type, subId, data }) => {
