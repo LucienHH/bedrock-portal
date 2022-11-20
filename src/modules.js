@@ -15,8 +15,8 @@ const altCheck = async (api, owner) => {
 const autoFriendAdd = async (api) => {
 	setInterval(async () => {
 
-		const friends = await api.get('https://peoplehub.xboxlive.com/users/me/people/social/decoration/details').then(res => res.people.map(e => e.xuid));
-		const followers = await api.get('https://peoplehub.xboxlive.com/users/me/people/followers/decoration/details').then(res => res.people);
+		const friends = await api.get('https://peoplehub.xboxlive.com/users/me/people/social/decoration/details', { contractVersion: 5 }).then(res => res.people.map(e => e.xuid));
+		const followers = await api.get('https://peoplehub.xboxlive.com/users/me/people/followers/decoration/details', { contractVersion: 5 }).then(res => res.people);
 
 		const needsAdding = followers.filter(res => !friends.includes(res.xuid));
 
