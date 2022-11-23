@@ -36,15 +36,19 @@ const { BedrockPortal } = require('bedrock-portal');
 const { Authflow, Titles } = require('prismarine-auth');
 
 const main = async () => {
-	const auth = new Authflow('example', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo' });
+  const auth = new Authflow('example', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo' });
+  
+  const session = new BedrockPortal(auth, {
+    ip: 'geyserconnect.net', // The server IP & port to redirect players to
+    port: 19132,
+    joinability: 'friends_of_friends', // The joinability of the session. Can be 'friends_of_friends', 'friends_only', 'invite_only'
+  });
 
-	const session = new BedrockPortal(auth, {
-		ip: 'geyserconnect.net', // The server IP & port to redirect players to
-		port: 19132,
-		joinability: 'friends_of_friends', // The joinability of the session. Can be 'friends_of_friends', 'friends_only', 'invite_only'
-	});
+  await session.start();
+	
+  // accepts a player's gamertag or xuid
+  await session.invitePlayer('p3')
 
-	await session.start();
 };
 
 main();
@@ -56,10 +60,10 @@ Modules are used to extend the functionality of the BedrockPortal class. You can
 
 ```js
 new BedrockPortal(auth, {
-	...,
-	modules: {
-		autoFriendAdd: true, // Automatically add friends to the session
-	},
+  ...,
+  modules: {
+  autoFriendAdd: true, // Automatically add friends to the session
+  },
 })
 ```
 
