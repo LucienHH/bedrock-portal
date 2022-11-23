@@ -62,7 +62,7 @@ Modules are used to extend the functionality of the BedrockPortal class. You can
 new BedrockPortal(auth, {
   ...,
   modules: {
-  autoFriendAdd: true, // Automatically add friends to the session
+    autoFriendAdd: true, // Automatically add friends to the session
   },
 })
 ```
