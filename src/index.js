@@ -228,6 +228,7 @@ module.exports = class BedrockPortal extends EventEmitter {
 					OnlineCrossPlatformGame: true,
 					CrossPlayDisabled: false,
 					TitleId: 0,
+					TransportLayer: 0,
 					SupportedConnections: [
 						{
 							ConnectionType: 6,
