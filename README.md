@@ -36,7 +36,7 @@ const { BedrockPortal } = require('bedrock-portal');
 const { Authflow, Titles } = require('prismarine-auth');
 
 const main = async () => {
-  const auth = new Authflow('example', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo' });
+  const auth = new Authflow('example', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' });
   
   const session = new BedrockPortal(auth, {
     ip: 'geyserconnect.net', // The server IP & port to redirect players to

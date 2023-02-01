@@ -1,5 +1,3 @@
-process.env.DEBUG = '*';
-
 module.exports = {
-	BedrockPortal: require('./src/index'),
+  BedrockPortal: require('./src/index'),
 };
