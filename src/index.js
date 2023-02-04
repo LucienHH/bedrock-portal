@@ -51,27 +51,10 @@ module.exports = class BedrockPortal extends EventEmitter {
 
     const connectionId = await this.#rta.subscribe('https://sessiondirectory.xboxlive.com/connections/').then(e => e.data.ConnectionId);
 
-    const session = await this.createAndPublishSession(connectionId);
+    const session = await this.#createAndPublishSession(connectionId);
 
     await this.#handleSessionEvents();
 
-    return session;
-  }
-
-  async createAndPublishSession(connectionId) {
-    this.players = [];
-
-    await this.updateSession(this.#createSessionBody(connectionId));
-
-    debug(`Created session, name: ${this.session.name}`);
-
-    await this.updateHandle(this.#createHandleBody('activity'));
-
-    const session = await this.getSession();
-
-    await this.updateSession({ properties: session.properties });
-
-    debug(`Published session, name: ${this.session.name}`);
 
     return session;
   }
@@ -159,6 +142,24 @@ module.exports = class BedrockPortal extends EventEmitter {
     module.applyOptions(options);
 
     this.modules[module.name] = module;
+  }
+
+  async #createAndPublishSession(connectionId) {
+    this.players = [];
+
+    await this.updateSession(this.#createSessionBody(connectionId));
+
+    debug(`Created session, name: ${this.session.name}`);
+
+    await this.updateHandle(this.#createHandleBody('activity'));
+
+    const session = await this.getSession();
+
+    await this.updateSession({ properties: session.properties });
+
+    debug(`Published session, name: ${this.session.name}`);
+
+    return session;
   }
 
   async #handleSessionEvents() {
