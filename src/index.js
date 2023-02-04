@@ -78,6 +78,8 @@ module.exports = class BedrockPortal extends EventEmitter {
   }
 
   async invitePlayer(identifier) {
+    debug(`Inviting player, identifier: ${identifier}`);
+
     const profile = await this.#rest.getXboxProfile(identifier);
     const invitePayload = {
       invitedXuid: String(profile.xuid),
@@ -87,7 +89,6 @@ module.exports = class BedrockPortal extends EventEmitter {
     await this.updateHandle(this.#createHandleBody('invite', invitePayload));
 
     debug(`Invited player, xuid: ${profile.xuid}`);
-
   }
 
   async updateMemberCount(count) {
