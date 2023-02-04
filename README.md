@@ -65,7 +65,7 @@ Options:
 - **autoInvite**: boolean - Automatically invites recently added friends to the game (default: false)
 
 ```js
-const { Modules } = require('bedrock-portal');
+const { BedrockPortal, Modules } = require('bedrock-portal');
 
 const portal = new BedrockPortal(auth, { ... })
 
@@ -82,7 +82,7 @@ portal.use(Modules.autoFriendAdd, {
 
 Creating a module is easy. You can create a module by extending the `Module` class.
 
-Note: The `stopped` property is set to `true` when the module is stopped. You can use this to stop the module's loop (if one is present) else the process will not exit.
+Note: The `stopped` property is set to `true` when the portal is stopped. You can use this to stop the module's loop (if one is present) else the process will not exit.
 
 ```js
 const { Module } = require('bedrock-portal');
