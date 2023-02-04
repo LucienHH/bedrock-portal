@@ -3,7 +3,7 @@ const { v4: uuidV4 } = require('uuid');
 const { XboxRTA } = require('xbox-rta');
 const { EventEmitter } = require('events');
 
-const { autoFriendAdd, altCheck } = require('./modules');
+const { altCheck } = require('./common/util');
 const { SessionConfig, Endpoints, Joinability } = require('./common/constants');
 
 const Rest = require('./rest');
@@ -80,6 +80,11 @@ module.exports = class BedrockPortal extends EventEmitter {
 
     await this.updateSession({ members: { me: null } });
 
+    if (this.modules) {
+      for (const mod of Object.values(this.modules)) {
+        mod.stop();
+      }
+    }
     debug(`Abandoned session, name: ${this.session.name}`);
   }
 
@@ -139,6 +144,22 @@ module.exports = class BedrockPortal extends EventEmitter {
     });
   }
 
+  use(module, options = {}) {
+
+    debug(`Enabled module: ${module.name} with options: ${JSON.stringify(options)}`);
+
+    this.modules = this.modules || {};
+
+    if (typeof module === 'function') module = new module();
+    if (!(module instanceof require('./classes/Module'))) throw new Error('Module must extend the base module');
+    if (typeof module.run !== 'function') throw new Error('Module must have a run function');
+    if (this.modules[module.name]) throw new Error(`Module with name ${module.name} has already been loaded`);
+
+    module.applyOptions(options);
+
+    this.modules[module.name] = module;
+  }
+
   async #handleSessionEvents() {
     this.#rta.on('reconnect', async () => {
       const connectionId = await this.#rta.subscribe('https://sessiondirectory.xboxlive.com/connections/').then(e => e.data.ConnectionId);
@@ -187,7 +208,13 @@ module.exports = class BedrockPortal extends EventEmitter {
       this.players = players;
     });
 
-    if (this.options.modules?.autoFriendAdd) autoFriendAdd(this.#rest);
+    if (this.modules) {
+      for (const mod of Object.values(this.modules)) {
+        mod.run(this, { rest: this.#rest, rta: this.#rta })
+          .then(() => debug(`Module ${mod.name} has run`))
+          .catch(e => debug(`Module ${mod.name} failed to run`, e));
+      }
+    }
 
   }
 
