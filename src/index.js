@@ -7,6 +7,7 @@ const { altCheck } = require('./common/util');
 const { SessionConfig, Endpoints, Joinability } = require('./common/constants');
 
 const Rest = require('./rest');
+const Player = require('./classes/Player');
 
 const genRaknetGUID = () => {
   const chars = '0123456789';
@@ -185,18 +186,9 @@ module.exports = class BedrockPortal extends EventEmitter {
 
       const profiles = await this.#rest.getxboxProfileBatch(xuids);
 
-      const players = sessionMembers.map(e => {
-        const { xuid, gamertag, displayPicRaw: avatar, gamerScore: gamerscore, preferredColor: colour } = profiles.find(p => p.xuid === e.constants.system.xuid);
-        return {
-          profile: { xuid, gamertag, avatar, gamerscore, colour },
-          session: {
-            titleId: e.activeTitleId,
-            joinTime: e.joinTime,
-            index: e.constants.system.index,
-            connectionId: e.properties.system.connection,
-            subscriptionId: e.properties.system.subscription?.id,
-          },
-        };
+      const players = sessionMembers.map(sessionMember => {
+        const player = profiles.find(p => p.xuid === sessionMember.constants.system.xuid);
+        return new Player(player, sessionMember);
       });
 
       const newPlayers = players.filter(player => !this.players.find(p => p.profile.xuid === player.profile.xuid));
