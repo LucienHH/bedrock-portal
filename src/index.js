@@ -43,7 +43,7 @@ module.exports = class BedrockPortal extends EventEmitter {
     this.sessionOwner = await this.#rest.getXboxProfile('me');
 
     if (!this.options.disableAltCheck) {
-      const { isAlt, reason } = await altCheck(this.#rest, this.sessionOwner);
+      const { isAlt, reason } = await altCheck(this.#rest);
       if (!isAlt) throw new Error('Genuine account detected - ' + reason);
     }
 
