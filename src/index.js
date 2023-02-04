@@ -3,262 +3,286 @@ const { v4: uuidV4 } = require('uuid');
 const { XboxRTA } = require('xbox-rta');
 const { EventEmitter } = require('events');
 
-const { autoFriendAdd, altCheck } = require('./modules');
+const { altCheck } = require('./common/util');
 const { SessionConfig, Endpoints, Joinability } = require('./common/constants');
 
 const Rest = require('./rest');
+const Player = require('./classes/Player');
 
 const genRaknetGUID = () => {
-	const chars = '0123456789';
-	let result = '';
-	for (let i = 20; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
-	return result;
+  const chars = '0123456789';
+  let result = '';
+  for (let i = 20; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+  return result;
 };
 
 module.exports = class BedrockPortal extends EventEmitter {
-	#rest;#rta;
-	constructor(authflow, options = {}) {
-		super();
-		const name = options.sessionName || uuidV4();
-		this.validateOptions(options);
-		this.#rest = new Rest(authflow);
-		this.#rta = new XboxRTA(authflow);
-		this.options = options;
-		this.session = {
-			url: `https://sessiondirectory.xboxlive.com/serviceconfigs/${SessionConfig.MinecraftSCID}/sessionTemplates/${SessionConfig.MinecraftTemplateName}/sessions/${name}`,
-			name,
-			subscriptionId: uuidV4(),
-		};
-		this.players = [];
-	}
+  #rest;#rta;
+  constructor(authflow, options = {}) {
+    super();
+    const name = options.sessionName || uuidV4();
+    this.validateOptions(options);
+    this.#rest = new Rest(authflow);
+    this.#rta = new XboxRTA(authflow);
+    this.options = options;
+    this.session = {
+      url: `https://sessiondirectory.xboxlive.com/serviceconfigs/${SessionConfig.MinecraftSCID}/sessionTemplates/${SessionConfig.MinecraftTemplateName}/sessions/${name}`,
+      name,
+      subscriptionId: uuidV4(),
+    };
+    this.players = [];
+  }
 
-	validateOptions(options) {
-		if (!options.ip) throw new Error('No IP provided');
-		if (!options.port) throw new Error('No port provided');
-		if (options.joinability && !Object.keys(Joinability).includes(options.joinability)) throw new Error('Invalid joinability - Expected one of ' + Object.keys(Joinability).join(', '));
-	}
+  validateOptions(options) {
+    if (!options.ip) throw new Error('No IP provided');
+    if (!options.port) throw new Error('No port provided');
+    if (options.joinability && !Object.keys(Joinability).includes(options.joinability)) throw new Error('Invalid joinability - Expected one of ' + Object.keys(Joinability).join(', '));
+  }
 
-	async start() {
-		this.sessionOwner = await this.#rest.getXboxProfile('me');
+  async start() {
+    this.sessionOwner = await this.#rest.getXboxProfile('me');
 
-		if (!this.options.disableAltCheck) {
-			const { isAlt, reason } = await altCheck(this.#rest, this.sessionOwner);
-			if (!isAlt) throw new Error('Genuine account detected - ' + reason);
-		}
+    if (!this.options.disableAltCheck) {
+      const { isAlt, reason } = await altCheck(this.#rest);
+      if (!isAlt) throw new Error('Genuine account detected - ' + reason);
+    }
 
-		await this.#rta.connect();
+    await this.#rta.connect();
 
-		const connectionId = await this.#rta.subscribe('https://sessiondirectory.xboxlive.com/connections/').then(e => e.data.ConnectionId);
+    const connectionId = await this.#rta.subscribe('https://sessiondirectory.xboxlive.com/connections/').then(e => e.data.ConnectionId);
 
-		const session = await this.createAndPublishSession(connectionId);
+    const session = await this.#createAndPublishSession(connectionId);
 
-		await this.#handleSessionEvents();
+    await this.#handleSessionEvents();
 
-		return session;
-	}
+    this.emit('sessionCreated', session);
 
-	async createAndPublishSession(connectionId) {
-		this.players = [];
+    return session;
+  }
 
-		await this.updateSession(this.#createSessionBody(connectionId));
+  async end() {
+    await this.#rta.disconnect();
 
-		debug(`Created session, name: ${this.session.name}`);
+    await this.updateSession({ members: { me: null } });
 
-		await this.updateHandle(this.#createHandleBody('activity'));
+    if (this.modules) {
+      for (const mod of Object.values(this.modules)) {
+        mod.stop();
+      }
+    }
+    debug(`Abandoned session, name: ${this.session.name}`);
+  }
 
-		const session = await this.getSession();
+  getSessionMembers() {
+    return this.players;
+  }
 
-		await this.updateSession({ properties: session.properties });
+  async invitePlayer(identifier) {
+    debug(`Inviting player, identifier: ${identifier}`);
 
-		debug(`Published session, name: ${this.session.name}`);
+    const profile = await this.#rest.getXboxProfile(identifier);
+    const invitePayload = {
+      invitedXuid: String(profile.xuid),
+      inviteAttributes: { titleId: SessionConfig.MinecraftTitleID },
+    };
 
-		return session;
-	}
+    await this.updateHandle(this.#createHandleBody('invite', invitePayload));
 
-	async end() {
-		await this.#rta.disconnect();
+    debug(`Invited player, xuid: ${profile.xuid}`);
+  }
 
-		await this.updateSession({ members: { me: null } });
+  async updateMemberCount(count) {
+    await this.updateSession({ properties: { custom: { MemberCount: Number(count) } } });
+  }
 
-		debug(`Abandoned session, name: ${this.session.name}`);
-	}
+  async updateConnection(connectionId) {
+    await this.updateSession({
+      members: {
+        me: {
+          properties: {
+            system: {
+              active: true,
+              connection: connectionId,
+            },
+          },
+        },
+      },
+    });
+  }
 
-	getSessionMembers() {
-		return this.players;
-	}
+  async getSession() {
+    return await this.#rest.get(this.session.url, {
+      contractVersion: 107,
+    });
+  }
 
-	async invitePlayer(identifier) {
-		const profile = await this.#rest.getXboxProfile(identifier);
-		const invitePayload = {
-			invitedXuid: String(profile.xuid),
-			inviteAttributes: { titleId: SessionConfig.MinecraftTitleID },
-		};
+  async updateSession(payload) {
+    await this.#rest.put(this.session.url, {
+      data: { ...payload },
+      contractVersion: 107,
+    });
+  }
 
-		await this.updateHandle(this.#createHandleBody('invite', invitePayload));
+  async updateHandle(payload) {
+    await this.#rest.post(Endpoints.Handle, {
+      data: { ...payload },
+      contractVersion: 107,
+    });
+  }
 
-		debug(`Invited player, xuid: ${profile.xuid}`);
+  use(module, options = {}) {
 
-	}
+    debug(`Enabled module: ${module.name} with options: ${JSON.stringify(options)}`);
 
-	async updateMemberCount(count) {
-		await this.updateSession({ properties: { custom: { MemberCount: Number(count) } } });
-	}
+    this.modules = this.modules || {};
 
-	async updateConnection(connectionId) {
-		await this.updateSession({
-			members: {
-				me: {
-					properties: {
-						system: {
-							active: true,
-							connection: connectionId,
-						},
-					},
-				},
-			},
-		});
-	}
+    if (typeof module === 'function') module = new module();
+    if (!(module instanceof require('./classes/Module'))) throw new Error('Module must extend the base module');
+    if (typeof module.run !== 'function') throw new Error('Module must have a run function');
+    if (this.modules[module.name]) throw new Error(`Module with name ${module.name} has already been loaded`);
 
-	async getSession() {
-		return await this.#rest.get(this.session.url, {
-			contractVersion: 107,
-		});
-	}
+    module.applyOptions(options);
 
-	async updateSession(payload) {
-		await this.#rest.put(this.session.url, {
-			data: { ...payload },
-			contractVersion: 107,
-		});
-	}
+    this.modules[module.name] = module;
+  }
 
-	async updateHandle(payload) {
-		await this.#rest.post(Endpoints.Handle, {
-			data: { ...payload },
-			contractVersion: 107,
-		});
-	}
+  async #createAndPublishSession(connectionId) {
+    this.players = [];
 
-	async #handleSessionEvents() {
-		this.#rta.on('reconnect', async () => {
-			const connectionId = await this.#rta.subscribe('https://sessiondirectory.xboxlive.com/connections/').then(e => e.data.ConnectionId);
+    await this.updateSession(this.#createSessionBody(connectionId));
 
-			try {
-				await this.updateConnection(connectionId);
-				await this.updateHandle(this.#createHandleBody('activity'));
-			}
-			catch (e) {
-				debug('Failed to update connection, session may have been abandoned', e);
-				await this.createAndPublishSession(connectionId);
-			}
-		});
+    debug(`Created session, name: ${this.session.name}`);
 
-		this.#rta.on('event', async ({ type, subId, data }) => {
-			this.emit('rtaEvent', { type, subId, data });
-			const session = await this.getSession();
+    await this.updateHandle(this.#createHandleBody('activity'));
 
-			debug('Received RTA event, session has been updated', session);
+    const session = await this.getSession();
 
-			const sessionMembers = Object.keys(session.members).map(key => session.members[key]).filter(member => member.constants.system.xuid !== this.sessionOwner.xuid);
-			const xuids = sessionMembers.map(e => e.constants.system.xuid);
+    await this.updateSession({ properties: session.properties });
 
-			const profiles = await this.#rest.getxboxProfileBatch(xuids);
+    debug(`Published session, name: ${this.session.name}`);
 
-			const players = sessionMembers.map(e => {
-				const { xuid, gamertag, displayPicRaw: avatar, gamerScore: gamerscore, preferredColor: colour } = profiles.find(p => p.xuid === e.constants.system.xuid);
-				return {
-					profile: { xuid, gamertag, avatar, gamerscore, colour },
-					session: {
-						titleId: e.activeTitleId,
-						joinTime: e.joinTime,
-						index: e.constants.system.index,
-						connectionId: e.properties.system.connection,
-						subscriptionId: e.properties.system.subscription?.id,
-					},
-				};
-			});
+    return session;
+  }
 
-			const newPlayers = players.filter(player => !this.players.find(p => p.profile.xuid === player.profile.xuid));
-			if (newPlayers.length) this.emit('playersAdded', newPlayers);
+  async #handleSessionEvents() {
+    this.#rta.on('reconnect', async () => {
+      const connectionId = await this.#rta.subscribe('https://sessiondirectory.xboxlive.com/connections/').then(e => e.data.ConnectionId);
 
-			const removedPlayers = this.players.filter(player => !players.find(p => p.profile.xuid === player.profile.xuid));
-			if (removedPlayers.length) this.emit('playersRemoved', removedPlayers);
+      try {
+        await this.updateConnection(connectionId);
+        await this.updateHandle(this.#createHandleBody('activity'));
+      }
+      catch (e) {
+        debug('Failed to update connection, session may have been abandoned', e);
+        await this.createAndPublishSession(connectionId);
+      }
+    });
 
-			this.players = players;
-		});
+    this.#rta.on('event', async ({ type, subId, data }) => {
+      this.emit('rtaEvent', { type, subId, data });
+      const session = await this.getSession();
 
-		if (this.options.modules?.autoFriendAdd) autoFriendAdd(this.#rest);
+      this.emit('sessionUpdated', session);
 
-	}
+      debug('Received RTA event, session has been updated', session);
 
-	#createHandleBody(type, additional = {}) {
-		return {
-			version: 1,
-			type,
-			sessionRef: {
-				scid: SessionConfig.MinecraftSCID,
-				templateName: SessionConfig.MinecraftTemplateName,
-				name: this.session.name,
-			},
-			...additional,
-		};
-	}
+      const sessionMembers = Object.keys(session.members).map(key => session.members[key]).filter(member => member.constants.system.xuid !== this.sessionOwner.xuid);
+      const xuids = sessionMembers.map(e => e.constants.system.xuid);
 
-	#createSessionBody(connectionId) {
-		const joinability = Joinability[this.options.joinability ?? 'friends_of_friends'];
-		return {
-			properties: {
-				system: {
-					joinRestriction: joinability.joinRestriction,
-					readRestriction: 'followed',
-					closed: false,
-				},
-				custom: {
-					hostName: String(this.options.world?.hostName || `${this.sessionOwner.gamertag}'s Portal`),
-					worldName: String(this.options.world?.name || 'BedrockPortal'),
-					version: String(this.options.world?.version || require('../package.json').version),
-					MemberCount: Number(this.options.world?.memberCount ?? 0),
-					MaxMemberCount: Number(this.options.world?.maxMemberCount ?? 10),
-					Joinability: joinability.joinability,
-					ownerId: this.sessionOwner.xuid,
-					rakNetGUID: genRaknetGUID(),
-					worldType: 'Survival',
-					protocol: SessionConfig.MiencraftProtocolVersion,
-					BroadcastSetting: joinability.broadcastSetting,
-					OnlineCrossPlatformGame: true,
-					CrossPlayDisabled: false,
-					TitleId: 0,
-					TransportLayer: 0,
-					SupportedConnections: [
-						{
-							ConnectionType: 6,
-							HostIpAddress: this.options.ip,
-							HostPort: Number(this.options.port),
-							RakNetGUID: '',
-						},
-					],
-				},
-			},
-			members: {
-				me: {
-					constants: {
-						system: {
-							xuid: this.sessionOwner.xuid,
-							initialize: true,
-						},
-					},
-					properties: {
-						system: {
-							active: true,
-							connection: connectionId,
-							subscription: {
-								id: this.session.subscriptionId,
-								changeTypes: ['everything'],
-							},
-						},
-					},
-				},
-			},
-		};
-	}
+      const profiles = await this.#rest.getxboxProfileBatch(xuids);
+
+      const players = sessionMembers.map(sessionMember => {
+        const player = profiles.find(p => p.xuid === sessionMember.constants.system.xuid);
+        return new Player(player, sessionMember);
+      });
+
+      const newPlayers = players.filter(player => !this.players.find(p => p.profile.xuid === player.profile.xuid));
+      if (newPlayers.length) newPlayers.forEach(player => this.emit('playerJoin', player));
+
+      const removedPlayers = this.players.filter(player => !players.find(p => p.profile.xuid === player.profile.xuid));
+      if (removedPlayers.length) removedPlayers.forEach(player => this.emit('playerLeave', player));
+
+      this.players = players;
+    });
+
+    if (this.modules) {
+      for (const mod of Object.values(this.modules)) {
+        mod.run(this, { rest: this.#rest, rta: this.#rta })
+          .then(() => debug(`Module ${mod.name} has run`))
+          .catch(e => debug(`Module ${mod.name} failed to run`, e));
+      }
+    }
+
+  }
+
+  #createHandleBody(type, additional = {}) {
+    return {
+      version: 1,
+      type,
+      sessionRef: {
+        scid: SessionConfig.MinecraftSCID,
+        templateName: SessionConfig.MinecraftTemplateName,
+        name: this.session.name,
+      },
+      ...additional,
+    };
+  }
+
+  #createSessionBody(connectionId) {
+    const joinability = Joinability[this.options.joinability ?? 'friends_of_friends'];
+    return {
+      properties: {
+        system: {
+          joinRestriction: joinability.joinRestriction,
+          readRestriction: 'followed',
+          closed: false,
+        },
+        custom: {
+          hostName: String(this.options.world?.hostName || `${this.sessionOwner.gamertag}'s Portal`),
+          worldName: String(this.options.world?.name || 'BedrockPortal'),
+          version: String(this.options.world?.version || require('../package.json').version),
+          MemberCount: Number(this.options.world?.memberCount ?? 0),
+          MaxMemberCount: Number(this.options.world?.maxMemberCount ?? 10),
+          Joinability: joinability.joinability,
+          ownerId: this.sessionOwner.xuid,
+          rakNetGUID: genRaknetGUID(),
+          worldType: 'Survival',
+          protocol: SessionConfig.MiencraftProtocolVersion,
+          BroadcastSetting: joinability.broadcastSetting,
+          OnlineCrossPlatformGame: true,
+          CrossPlayDisabled: false,
+          TitleId: 0,
+          TransportLayer: 0,
+          SupportedConnections: [
+            {
+              ConnectionType: 6,
+              HostIpAddress: this.options.ip,
+              HostPort: Number(this.options.port ?? 19132),
+              RakNetGUID: '',
+            },
+          ],
+        },
+      },
+      members: {
+        me: {
+          constants: {
+            system: {
+              xuid: this.sessionOwner.xuid,
+              initialize: true,
+            },
+          },
+          properties: {
+            system: {
+              active: true,
+              connection: connectionId,
+              subscription: {
+                id: this.session.subscriptionId,
+                changeTypes: ['everything'],
+              },
+            },
+          },
+        },
+      },
+    };
+  }
 };

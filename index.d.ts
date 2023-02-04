@@ -1,5 +1,6 @@
 /// <reference types="node" />
 import { EventEmitter } from 'events';
+import { Authflow } from 'prismarine-auth';
 declare module 'bedrock-portal' {
   export class BedrockPortal extends EventEmitter {
     /**
@@ -22,7 +23,7 @@ declare module 'bedrock-portal' {
     /**
      * Returns the current members in the session.
      */
-    getSessionMembers(): Promise<SessionMember[]>
+    getSessionMembers(): Promise<Player[]>
 
     /**
      * Invites a player to the BedrockPortal instance.
@@ -59,9 +60,119 @@ declare module 'bedrock-portal' {
      */
     updateHandle(payload: HandlePayload): Promise<void>
 
-    on(event: 'playersAdded', listener: (data: SessionMember[]) => void): this;
-    on(event: 'playersRemoved', listener: (data: SessionMember[]) => void): this;
+    /**
+     * Enables a module for the BedrockPortal instance.
+     * @see [Modules](https://github.com/LucienHH/bedrock-portal#modules) for a list of available modules or to create your own.
+     * @example
+     * portal.use(Modules.autoFriendAdd)
+     * @example
+     * portal.use(Modules.autoFriendAdd, {
+     *   inviteOnAdd: true
+     * })
+     */
+    use(module: InstanceType<typeof ExtendedModule>, options?: any): void
+
+    /**
+     * Emitted when the BedrockPortal session is created.
+     * @example
+     * portal.on('sessionCreated', (session) => {
+     *   console.log(`Session created!`, session)
+     * })
+     */
+    on(event: 'sessionCreated', listener: (session: SessionResponse) => void): this;
+
+    /**
+     * Emitted when the BedrockPortal session is updated.
+     * @example
+     * portal.on('sessionUpdated', (session) => {
+     *  console.log(`Session updated!`, session)
+     * })
+     */
+    on(event: 'sessionUpdated', listener: (session: SessionResponse) => void): this;
+  
+    /**
+     * Emitted when a player joins the BedrockPortal instance.
+     * @param data The player's data.
+     * @example
+     * portal.on('playerJoin', (data) => {
+     *  console.log(`${data.profile.gamertag} joined!`)
+     * })
+     */
+    on(event: 'playerJoin', listener: (data: InstanceType<typeof Player>) => void): this;
+
+    /**
+     * Emitted when a player leaves the BedrockPortal instance.
+     * @param data The player's data.
+     * @example
+     * portal.on('playerLeave', (data) => {
+     *  console.log(`${data.profile.gamertag} left!`)
+     * })
+     */
+    on(event: 'playerLeave', listener: (data: InstanceType<typeof Player>) => void): this;
+
+    /**
+     * Emitted when the RTA service receives an event.
+     * @param data The RTA event data.
+     */
     on(event: 'rtaEvent', listener: (data: RTAEvent) => void): this;
+
+    /**
+     * Emitted when a player is added back via the AutoFriendAdd module.
+     * @param data The player's data.
+     * @example
+     * portal.on('friendAdded', (data) => {
+     *   console.log(`Added ${data.gamertag} back!`)
+     * })
+     */
+    on(event: 'friendAdded', listener: (data: InstanceType<typeof Player>) => void): this;
+
+  }
+
+  export class Player {
+    constructor(profileData?: XboxPlayerProfile, sessionData?: SessionMember)
+    profile?: Partial<XboxPlayerProfile>
+    session?: Partial<{
+      titleId: string
+      joinTime: string
+      index: number
+      connectionId: string
+      subscriptionId: string
+    }>
+    
+    static fromXboxProfile(data: XboxPlayerProfile): InstanceType<typeof Player>
+    static fromSessionMember(data: SessionMember): InstanceType<typeof Player>
+
+    setXboxProfile(data: XboxPlayerProfile): void
+    setSessionMember(data: SessionMember): void
+  }
+
+  export class Module {
+    constructor(name: string, description: string)
+    name: string
+    description: string
+    options: any
+    stopped: boolean
+    debug(...args: any[]): void
+    applyOptions(options: any): void
+    stop(): void
+  }
+
+  class ExtendedModule extends Module {
+    constructor()
+    run(portal: BedrockPortal, { rest, rta }: { rest: any, rta: any }): Promise<void>
+  }
+
+  export const Modules: {
+    /**
+     * Automatically adds players back as friends and invites them to the session.
+     * @example
+     * portal.use(Modules.autoFriendAdd)
+     * @example
+     * portal.use(Modules.autoFriendAdd, {
+     *   inviteOnAdd: true
+     * })
+     */
+    autoFriendAdd: InstanceType<typeof ExtendedModule>
   }
 
   export interface RTAEvent {
@@ -80,16 +191,16 @@ declare module 'bedrock-portal' {
     }
   }
 
-  export interface SessionMember {
-    profile: { 
+  export interface SessionProfile {
+    profile: {
       xuid: string
       gamertag: string
       avatar: string
       gamerscore: string
       colour: {
-        primaryColor: string
-        secondaryColor: string
-        tertiaryColor: string
+        primaryColour: string
+        secondaryColour: string
+        tertiaryColour: string
       }
     },
     session: {
@@ -102,20 +213,84 @@ declare module 'bedrock-portal' {
   }
 
   export interface BedrockPortalOptions {
+    /**
+     * The ip of the server to redirect users to.
+     */
     ip: string
-    port: number
+    /**
+     * The port the server is running on.
+     * @default 19132
+     */
+    port?: number
+    /**
+     * If true disables the alt check
+     * @default false
+     * @warning We recommend using an alt account with BedrockPortal instead of disabling the alt check.
+     */
     disableAltCheck?: boolean
-    joinability?: 'invite_only' | 'friends_only' | 'friends_of_friends'
+    /**
+     * The joinability of the session.
+     * @default Joinability.FriendsOfFriends
+     * @see {@link Joinability}
+     * @example
+     * const { BedrockPortal, Joinability } = require('bedrock-portal')
+     * 
+     * portal = new BedrockPortal(auth, {
+     *   joinability: Joinability.InviteOnly
+     * })
+     * 
+     * portal = new BedrockPortal(auth, {
+     *   joinability: Joinability.FriendOnly
+     * })
+     * 
+     * portal = new BedrockPortal(auth, {
+     *   joinability: Joinability.FriendsOfFriends
+     * })
+     */
+    joinability?: Joinability
+    /**
+     * The world config to use for the session. Changes the session card which is displayed in the Minecraft client
+     */
     world?: {
+      /**
+       * The name of the world.
+       */
+      name?: string
+      /**
+       * The host name of the world.
+       */
       hostName?: string
-			name?: string
-			version?: string
-			memberCount?: number
-			maxMemberCount?: number
+      /**
+       * The version of the world. Doesn't have to be a real version.
+       */
+      version?: string
+      /**
+       * The current player count of the world.
+       * @default 0
+       */
+      memberCount?: number
+      /**
+       * The max player count of the world. Doesn't affect the session.
+       * @default 10
+       */
+      maxMemberCount?: number
     }
-    modules?: {
-      autoFriendAdd?: boolean
-    }
+  }
+
+  export enum Joinability {
+    /**
+     * Only players who have been invited can join the session.
+     * */
+    InviteOnly = 'invite_only',
+    /**
+     * Friends of the authenticating account can join/view the session without an invite.
+     * */
+    FriendOnly = 'friends_only',
+    /**
+     * Anyone that's a friend or friend of a friend can join/view the session without an invite.
+     * @default
+     * */
+    FriendsOfFriends = 'friends_of_friends'
   }
 
   export interface HandlePayload {
@@ -127,7 +302,7 @@ declare module 'bedrock-portal' {
       name: string,
     },
     inviteAttributes?: {
-      titleId: string 
+      titleId: string
       context: string
       contextString: string
       senderString: string
@@ -136,76 +311,76 @@ declare module 'bedrock-portal' {
   }
 
   export interface SessionResponse {
-      membersInfo: {
-          first: number,
-          next: number,
-          count: number,
-          accepted: number,
-          active: number
+    membersInfo: {
+      first: number,
+      next: number,
+      count: number,
+      accepted: number,
+      active: number
+    },
+    constants: {
+      system: {
+        readyRemovalTimeout: number,
+        reservedRemovalTimeout: number,
+        sessionEmptyTimeout: number,
+        inactiveRemovalTimeout: number,
+        version: number,
+        maxMembersCount: number,
+        visibility: string,
+        capabilities: {
+          connectivity: boolean,
+          connectionRequiredForActiveMembers: boolean,
+          gameplay: boolean,
+          crossPlay: boolean,
+          userAuthorizationStyle: boolean
+        },
+        inviteProtocol: string,
+        memberInitialization: {
+          membersNeededToStart: number,
+        }
       },
-      constants: {
-          system: {
-              readyRemovalTimeout: number,
-              reservedRemovalTimeout: number,
-              sessionEmptyTimeout: number,
-              inactiveRemovalTimeout: number,
-              version: number,
-              maxMembersCount: number,
-              visibility: string,
-              capabilities: {
-                  connectivity: boolean,
-                  connectionRequiredForActiveMembers: boolean,
-                  gameplay: boolean,
-                  crossPlay: boolean,
-                  userAuthorizationStyle: boolean
-              },
-              inviteProtocol: string,
-              memberInitialization: {
-                  membersNeededToStart: number,
-              }
-          },
-          custom: {}
+      custom: {}
+    },
+    properties: {
+      system: {
+        joinRestriction: 'followed' | 'local',
+        readRestriction: string,
+        turn: []
       },
-      properties: {
-          system: {
-              joinRestriction: 'followed' | 'local',
-              readRestriction: string,
-              turn: []
-          },
-          custom: {
-              Joinability: string,
-              hostName: string,
-              ownerId: string,
-              rakNetGUID: string,
-              version: string,
-              worldName: string,
-              worldType: string,
-              protocol: number,
-              MemberCount: number,
-              MaxMemberCount: number,
-              BroadcastSetting: number,
-              UsesWebSocketsWebRTCSignaling: boolean,
-              UsesMPSDWebRTCSignaling: boolean,
-              netherNetEnabled: boolean,
-              OnlineCrossPlatformGame: boolean,
-              CrossPlayDisabled: boolean,
-              TitleId: number,
-              SupportedConnections: SessionConnection[],
-              levelId: string,
-              LanGame: boolean
-          }
-      },
-      servers: {},
-
-      // all objects withing this object have the same structure
-      members: {
-          [index: number]: SessionMember
+      custom: {
+        Joinability: string,
+        hostName: string,
+        ownerId: string,
+        rakNetGUID: string,
+        version: string,
+        worldName: string,
+        worldType: string,
+        protocol: number,
+        MemberCount: number,
+        MaxMemberCount: number,
+        BroadcastSetting: number,
+        UsesWebSocketsWebRTCSignaling: boolean,
+        UsesMPSDWebRTCSignaling: boolean,
+        netherNetEnabled: boolean,
+        OnlineCrossPlatformGame: boolean,
+        CrossPlayDisabled: boolean,
+        TitleId: number,
+        SupportedConnections: SessionConnection[],
+        levelId: string,
+        LanGame: boolean
       }
-      correlationId: string,
-      contractVersion: number,
-      branch: string,
-      changeNumber: number,
-      startTime: string
+    },
+    servers: {},
+
+    // all objects withing this object have the same structure
+    members: {
+      [index: number]: SessionMember
+    }
+    correlationId: string,
+    contractVersion: number,
+    branch: string,
+    changeNumber: number,
+    startTime: string
   }
 
   export interface SessionRequest {
@@ -291,6 +466,31 @@ declare module 'bedrock-portal' {
     HostIpAddress: string,
     HostPort: number,
     RakNetGUID: string,
+  }
+
+  export interface XboxPlayerProfile {
+    xuid: string,
+    avatar: string,
+    gamerscore: string,
+    gamertag: string,
+    tier: string,
+    reputation: string,
+    colour: {
+      primaryColour: string,
+      secondaryColour: string,
+      tertiaryColour: string
+    },
+    realname: string,
+    bio: string,
+    location: string,
+    modernGamertag: string,
+    modernGamertagSuffix: string,
+    uniqueModernGamertag: string,
+    realnameOverride: string,
+    tenureLevel: string,
+    watermarks: string,
+    isQuarantined: boolean,
+    linkedAccounts: []
   }
 
 }
