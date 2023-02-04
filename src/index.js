@@ -253,7 +253,7 @@ module.exports = class BedrockPortal extends EventEmitter {
             {
               ConnectionType: 6,
               HostIpAddress: this.options.ip,
-              HostPort: Number(this.options.port),
+              HostPort: Number(this.options.port ?? 19132),
               RakNetGUID: '',
             },
           ],
