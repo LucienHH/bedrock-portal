@@ -55,6 +55,7 @@ module.exports = class BedrockPortal extends EventEmitter {
 
     await this.#handleSessionEvents();
 
+    this.emit('sessionCreated', session);
 
     return session;
   }
@@ -180,6 +181,8 @@ module.exports = class BedrockPortal extends EventEmitter {
       this.emit('rtaEvent', { type, subId, data });
       const session = await this.getSession();
 
+      this.emit('sessionUpdated', session);
+
       debug('Received RTA event, session has been updated', session);
 
       const sessionMembers = Object.keys(session.members).map(key => session.members[key]).filter(member => member.constants.system.xuid !== this.sessionOwner.xuid);
@@ -193,10 +196,10 @@ module.exports = class BedrockPortal extends EventEmitter {
       });
 
       const newPlayers = players.filter(player => !this.players.find(p => p.profile.xuid === player.profile.xuid));
-      if (newPlayers.length) this.emit('playersAdded', newPlayers);
+      if (newPlayers.length) newPlayers.forEach(player => this.emit('playerJoin', player));
 
       const removedPlayers = this.players.filter(player => !players.find(p => p.profile.xuid === player.profile.xuid));
-      if (removedPlayers.length) this.emit('playersRemoved', removedPlayers);
+      if (removedPlayers.length) removedPlayers.forEach(player => this.emit('playerLeave', player));
 
       this.players = players;
     });
