@@ -5,6 +5,7 @@
 		"es2022": true
 	},
 	"rules": {
+		"eol-last": ["error", "always"],
 		"brace-style": ["error", "stroustrup", { "allowSingleLine": true }],
 		"comma-dangle": ["error", "always-multiline"],
 		"comma-spacing": "error",
