@@ -1,6 +1,6 @@
 {
   "name": "bedrock-portal",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Creates a joinable session in Minecraft Bedrock Edition that can route players to their a specified host",
   "main": "index.js",
   "scripts": {
