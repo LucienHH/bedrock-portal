@@ -24,7 +24,7 @@ module.exports = class BedrockPortal extends EventEmitter {
     this.options = {
       port: 19132,
       disableAltCheck: false,
-      joinability: Joinability.friends_of_friends,
+      joinability: 'friends_of_friends',
       ...options,
       world: {
         hostName: `Bedrock Portal v${pkgVersion}`,
@@ -50,7 +50,7 @@ module.exports = class BedrockPortal extends EventEmitter {
   validateOptions(options) {
     if (!options.ip) throw new Error('No IP provided');
     if (!options.port) throw new Error('No port provided');
-    if (options.joinability && !Object.keys(Joinability).includes(options.joinability)) throw new Error('Invalid joinability - Expected one of ' + Object.keys(Joinability).join(', '));
+    if (!Object.keys(Joinability).includes(options.joinability)) throw new Error('Invalid joinability - Expected one of ' + Object.keys(Joinability).join(', '));
   }
 
   async start() {
@@ -243,7 +243,7 @@ module.exports = class BedrockPortal extends EventEmitter {
   }
 
   #createSessionBody(connectionId) {
-    const joinability = Joinability[this.options.joinability ?? 'friends_of_friends'];
+    const joinability = Joinability[this.options.joinability];
     return {
       properties: {
         system: {
