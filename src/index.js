@@ -4,6 +4,7 @@ const { XboxRTA } = require('xbox-rta');
 const { EventEmitter } = require('events');
 
 const { altCheck } = require('./common/util');
+const { version: pkgVersion } = require('../package.json');
 const { SessionConfig, Endpoints, Joinability } = require('./common/constants');
 
 const Rest = require('./rest');
@@ -20,14 +21,27 @@ module.exports = class BedrockPortal extends EventEmitter {
   #rest;#rta;
   constructor(authflow, options = {}) {
     super();
-    const name = options.sessionName || uuidV4();
-    this.validateOptions(options);
+    this.options = {
+      port: 19132,
+      disableAltCheck: false,
+      joinability: Joinability.friends_of_friends,
+      ...options,
+      world: {
+        hostName: `Bedrock Portal v${pkgVersion}`,
+        worldName: 'By LucienHH',
+        version: pkgVersion,
+        memberCount: 0,
+        maxMemberCount: 10,
+        ...options.world,
+      },
+    };
+    this.validateOptions(this.options);
     this.#rest = new Rest(authflow);
     this.#rta = new XboxRTA(authflow);
-    this.options = options;
+    const uuid = uuidV4();
     this.session = {
-      url: `https://sessiondirectory.xboxlive.com/serviceconfigs/${SessionConfig.MinecraftSCID}/sessionTemplates/${SessionConfig.MinecraftTemplateName}/sessions/${name}`,
-      name,
+      url: `https://sessiondirectory.xboxlive.com/serviceconfigs/${SessionConfig.MinecraftSCID}/sessionTemplates/${SessionConfig.MinecraftTemplateName}/sessions/${uuid}`,
+      name: uuid,
       subscriptionId: uuidV4(),
     };
     this.players = [];
@@ -238,11 +252,11 @@ module.exports = class BedrockPortal extends EventEmitter {
           closed: false,
         },
         custom: {
-          hostName: String(this.options.world?.hostName || `${this.sessionOwner.gamertag}'s Portal`),
-          worldName: String(this.options.world?.name || 'BedrockPortal'),
-          version: String(this.options.world?.version || require('../package.json').version),
-          MemberCount: Number(this.options.world?.memberCount ?? 0),
-          MaxMemberCount: Number(this.options.world?.maxMemberCount ?? 10),
+          hostName: String(this.options.world.hostName),
+          worldName: String(this.options.world.name),
+          version: String(this.options.world.version),
+          MemberCount: Number(this.options.world.memberCount),
+          MaxMemberCount: Number(this.options.world.maxMemberCount),
           Joinability: joinability.joinability,
           ownerId: this.sessionOwner.xuid,
           rakNetGUID: genRaknetGUID(),
@@ -257,7 +271,7 @@ module.exports = class BedrockPortal extends EventEmitter {
             {
               ConnectionType: 6,
               HostIpAddress: this.options.ip,
-              HostPort: Number(this.options.port ?? 19132),
+              HostPort: Number(this.options.port),
               RakNetGUID: '',
             },
           ],
