@@ -28,7 +28,7 @@ module.exports = class BedrockPortal extends EventEmitter {
       ...options,
       world: {
         hostName: `Bedrock Portal v${pkgVersion}`,
-        worldName: 'By LucienHH',
+        name: 'By LucienHH',
         version: pkgVersion,
         memberCount: 0,
         maxMemberCount: 10,
