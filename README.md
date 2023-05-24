@@ -62,7 +62,7 @@ Modules are used to extend the functionality of the BedrockPortal class.
 Automatically adds the account's followers as friends and invites them to the game. `#.use(Modules.autoFriendAdd);`
 
 Options:
-- **autoInvite**: boolean - Automatically invites recently added friends to the game (default: false)
+- **inviteOnAdd**: boolean - Automatically invites recently added friends to the game (default: false)
 
 ```js
 const { BedrockPortal, Modules } = require('bedrock-portal');
@@ -74,7 +74,7 @@ portal.use(Modules.autoFriendAdd);
 // or
 
 portal.use(Modules.autoFriendAdd, {
-  autoInvite: true,
+  inviteOnAdd: true,
 });
 ```
 
