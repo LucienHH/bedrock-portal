@@ -21,8 +21,12 @@ class AutoFriendAdd extends Module {
           .then(people => people.map(e => e.xuid))
           .catch(() => []);
 
+        this.debug(`Found ${friends.length} friend(s)`);
+
         const followers = await rest.getXboxFollowers()
           .catch(() => []);
+
+        this.debug(`Found ${followers.length} follower(s)`);
 
         const needsAdding = followers.filter(res => !friends.includes(res.xuid));
 
