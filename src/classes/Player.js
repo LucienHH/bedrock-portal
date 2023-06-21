@@ -1,9 +1,9 @@
 class Player {
-  constructor(profileData = {}, sessionData = {}) {
+  constructor(profileData, sessionData) {
     this.profile = {};
     this.session = {};
-    this.setXboxProfile(profileData);
-    this.setSessionMember(sessionData);
+    if (profileData) this.setXboxProfile(profileData);
+    if (sessionData) this.setSessionMember(sessionData);
   }
 
   static fromSessionMember(data) {
