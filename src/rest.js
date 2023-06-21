@@ -114,11 +114,11 @@ module.exports = class Rest {
   }
 
   async getXboxFriends() {
-    return await this.get('https://peoplehub.xboxlive.com/users/me/people/social/decoration/details', { contractVersion: 5 }).then(res => res.people.map(e => this.#parseXboxProfile(e)));
+    return await this.get('https://peoplehub.xboxlive.com/users/me/people/social/decoration/details,preferredColor', { contractVersion: 5 }).then(res => res.people.map(e => this.#parseXboxProfile(e)));
   }
 
   async getXboxFollowers() {
-    return await this.get('https://peoplehub.xboxlive.com/users/me/people/followers/decoration/details', { contractVersion: 5 }).then(res => res.people.map(e => this.#parseXboxProfile(e)));
+    return await this.get('https://peoplehub.xboxlive.com/users/me/people/followers/decoration/details,preferredColor', { contractVersion: 5 }).then(res => res.people.map(e => this.#parseXboxProfile(e)));
   }
 
   async addXboxFriend(xuid) {
