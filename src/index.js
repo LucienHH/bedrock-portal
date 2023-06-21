@@ -94,7 +94,11 @@ module.exports = class BedrockPortal extends EventEmitter {
   async invitePlayer(identifier) {
     debug(`Inviting player, identifier: ${identifier}`);
 
-    const profile = await this.#rest.getXboxProfile(identifier);
+    const profile = await this.#rest.getXboxProfile(identifier)
+      .catch(() => { throw new Error(`Failed to get profile for identifier: ${identifier}`); });
+
+    debug(`Inviting player, Got profile, xuid: ${profile.xuid}`);
+
     const invitePayload = {
       invitedXuid: String(profile.xuid),
       inviteAttributes: { titleId: SessionConfig.MinecraftTitleID },
@@ -220,11 +224,15 @@ module.exports = class BedrockPortal extends EventEmitter {
     });
 
     if (this.modules) {
-      for (const mod of Object.values(this.modules)) {
-        mod.run(this, { rest: this.#rest, rta: this.#rta })
-          .then(() => debug(`Module ${mod.name} has run`))
-          .catch(e => debug(`Module ${mod.name} failed to run`, e));
-      }
+      Object.values(this.modules).forEach(async mod => {
+        try {
+          mod.run(this, { rest: this.#rest, rta: this.#rta });
+          debug(`Module ${mod.name} has run`);
+        }
+        catch (e) {
+          debug(`Module ${mod.name} failed to run`, e);
+        }
+      });
     }
 
   }
