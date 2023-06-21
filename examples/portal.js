@@ -1,4 +1,6 @@
 /* eslint-disable no-multi-spaces */
+// process.env.DEBUG = 'bedrock-portal*';
+
 const { BedrockPortal, Modules, Joinability } = require('bedrock-portal');
 const { Authflow, Titles } = require('prismarine-auth');
 
@@ -23,9 +25,7 @@ const main = async () => {
     inviteOnAdd: true,
   });
 
-  await portal.start();                        // Starts the session
-
-  await portal.invitePlayer('p3');             // gamertag or xuid to invite
+  // Put your event listeners before portal.start() to ensure you don't miss any events
 
   portal.on('rtaEvent', (event) => {           // Emits when an RTA event is received
     console.log('RTA Event: ', event);
@@ -50,6 +50,10 @@ const main = async () => {
   portal.on('friendAdded', (player) => {       // Emits when a friend is added. Only emitted if autoFriendAdd module is used
     console.log('Friend Added: ', player);
   });
+
+  await portal.start();                        // Starts the session
+
+  await portal.invitePlayer('p3');             // gamertag or xuid to invite
 
 };
 
