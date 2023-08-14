@@ -8,6 +8,9 @@ class AutoFriendAdd extends Module {
     this.options = {
       inviteOnAdd: false,
       conditionToMeet: () => true,
+      checkInterval: 30000,
+      addInterval: 2000,
+      removeInterval: 2000,
     };
   }
 
@@ -42,7 +45,7 @@ class AutoFriendAdd extends Module {
 
           this.debug(`Added & invited ${account.gamertag}`);
 
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, this.options.addInterval));
         }
 
         this.debug('Checking for friends to remove');
@@ -65,7 +68,7 @@ class AutoFriendAdd extends Module {
 
           this.debug(`Removed ${account.gamertag}`);
 
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, this.options.removeInterval));
         }
 
       }
@@ -73,7 +76,7 @@ class AutoFriendAdd extends Module {
         this.debug(`Error: ${error.message}`, error);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 30000));
+      await new Promise(resolve => setTimeout(resolve, this.options.checkInterval));
     }
   }
 }

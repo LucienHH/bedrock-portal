@@ -24,6 +24,9 @@ const main = async () => {
   portal.use(Modules.autoFriendAdd, {          // Automatically adds friends to the session
     inviteOnAdd: true,
     conditionToMeet: (player) => player.presenceState === 'Online', // Only add friends that are online and remove friends that are offline
+    // checkInterval: 30000,                   // How often to check for friends to add/remove (optional - defaults to 30000ms)
+    addInterval: 2000,                         // How long to wait between adding friends (optional - defaults to 2000ms)
+    removeInterval: 2000,                      // How long to wait between removing friends (optional - defaults to 2000ms)
   });
 
   // Put your event listeners before portal.start() to ensure you don't miss any events

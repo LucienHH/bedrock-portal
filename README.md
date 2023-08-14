@@ -64,6 +64,9 @@ Automatically adds the account's followers as friends and invites them to the ga
 Options:
 - **inviteOnAdd**: boolean - Automatically invites recently added friends to the game (default: false)
 - **conditionToMeet**: (player: RawPlayer) => boolean - A function that returns a boolean. If the function returns true, followers will be added as a friend and the friends that don't will be removed (default: () => true)
+- **checkInterval**: number - How often to check for friends to add/remove (default: 30000ms)
+- **addInterval**: number - How long to wait between adding friends (default: 2000ms)
+- **removeInterval**: number - How long to wait between removing friends (default: 2000ms)
 
 ```js
 const { BedrockPortal, Modules } = require('bedrock-portal');
@@ -77,6 +80,9 @@ portal.use(Modules.autoFriendAdd);
 portal.use(Modules.autoFriendAdd, {
   inviteOnAdd: true,
   conditionToMeet: (player) => player.presenceState === 'Online', // Only add friends that are online and remove friends that are offline
+  // checkInterval: 30000,                      // How often to check for friends to add/remove (optional - defaults to 30000ms)
+  // addInterval: 2000,                         // How long to wait between adding friends (optional - defaults to 2000ms)
+  // removeInterval: 2000,                      // How long to wait between removing friends (optional - defaults to 2000ms)
 });
 ```
 
