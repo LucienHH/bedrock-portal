@@ -7,6 +7,7 @@ class AutoFriendAdd extends Module {
     super('autoFriendAdd', 'Automatically adds followers as friends');
     this.options = {
       inviteOnAdd: false,
+      conditionToMeet: () => true,
     };
   }
 
@@ -17,24 +18,12 @@ class AutoFriendAdd extends Module {
 
         this.debug('Checking for followers to add');
 
-        const friends = await rest.getXboxFriends()
-          .then(people => people.map(e => e.xuid))
-          .catch(() => []);
-
-        this.debug(`Found ${friends.length} friend(s)`);
-
         const followers = await rest.getXboxFollowers()
           .catch(() => []);
 
         this.debug(`Found ${followers.length} follower(s)`);
 
-        const needsAdding = followers.filter(res => !friends.includes(res.xuid));
-
-        if (!needsAdding.length) {
-          this.debug('No followers to add');
-          await new Promise(resolve => setTimeout(resolve, 30000));
-          continue;
-        }
+        const needsAdding = followers.filter(res => !res.isFollowedByCaller && this.options.conditionToMeet(res));
 
         this.debug(`Adding ${needsAdding.length} account(s) [${needsAdding.map(res => res.gamertag).join(', ')}]`);
 
@@ -53,8 +42,32 @@ class AutoFriendAdd extends Module {
 
           this.debug(`Added & invited ${account.gamertag}`);
 
-          await new Promise(resolve => setTimeout(resolve, 10000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
+
+        this.debug('Checking for friends to remove');
+
+        const friends = await rest.getXboxFriends()
+          .catch(() => []);
+
+        this.debug(`Found ${friends.length} friend(s)`);
+
+        const needsRemoving = friends.filter(res => !res.isFollowingCaller || !this.options.conditionToMeet(res));
+
+        this.debug(`Removing ${needsRemoving.length} account(s) [${needsRemoving.map(res => res.gamertag).join(', ')}]`);
+
+        for (const account of needsRemoving) {
+          await rest.removeXboxFriend(account.xuid).catch(err => {
+            throw Error(`Failed to remove ${account.gamertag}`, { cause: err });
+          });
+
+          portal.emit('friendRemoved', Player.fromXboxProfile(account));
+
+          this.debug(`Removed ${account.gamertag}`);
+
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
       }
       catch (error) {
         this.debug(`Error: ${error.message}`, error);

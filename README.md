@@ -63,6 +63,7 @@ Automatically adds the account's followers as friends and invites them to the ga
 
 Options:
 - **inviteOnAdd**: boolean - Automatically invites recently added friends to the game (default: false)
+- **conditionToMeet**: (player: RawPlayer) => boolean - A function that returns a boolean. If the function returns true, followers will be added as a friend and the friends that don't will be removed (default: () => true)
 
 ```js
 const { BedrockPortal, Modules } = require('bedrock-portal');
@@ -75,6 +76,7 @@ portal.use(Modules.autoFriendAdd);
 
 portal.use(Modules.autoFriendAdd, {
   inviteOnAdd: true,
+  conditionToMeet: (player) => player.presenceState === 'Online', // Only add friends that are online and remove friends that are offline
 });
 ```
 
@@ -139,6 +141,12 @@ Emitted when a player leaves the session.
 
 ### portal.on('friendAdded', (player) => {})
 Emitted when a player is added as a friend. This event is only emitted when the `autoFriendAdd` module is enabled.
+
+**Parameters**
+- player - [Player](#player) object
+
+### portal.on('friendRemoved', (player) => {})
+Emitted when a player is removed as a friend. This event is only emitted when the `autoFriendAdd` module is enabled.
 
 **Parameters**
 - player - [Player](#player) object
@@ -255,6 +263,83 @@ Emitted when a player is added as a friend. This event is only emitted when the 
   branch: string,
   changeNumber: number,
   startTime: string
+}
+```
+
+### RawPlayer
+
+```ts
+{
+    xuid: string;
+    isFavorite: boolean;
+    isFollowingCaller: boolean;
+    isFollowedByCaller: boolean;
+    isIdentityShared: boolean;
+    addedDateTimeUtc: string;
+    displayName: string;
+    realName: string;
+    displayPicRaw: string;
+    showUserAsAvatar: string;
+    gamertag: string;
+    gamerScore: string;
+    modernGamertag: string;
+    modernGamertagSuffix: string;
+    uniqueModernGamertag: string;
+    xboxOneRep: string;
+    presenceState: string;
+    presenceText: string;
+    presenceDevices: null | any[];
+    isBroadcasting: boolean;
+    isCloaked: null | boolean;
+    isQuarantined: boolean;
+    isXbox360Gamerpic: boolean;
+    lastSeenDateTimeUtc: string;
+    suggestion: null;
+    recommendation: null;
+    search: null;
+    titleHistory: null;
+    multiplayerSummary: null;
+    recentPlayer: null;
+    follower: {
+        text: string;
+        followedDateTime: string;
+    };
+    preferredColor: {
+        primaryColor: string;
+        secondaryColor: string;
+        tertiaryColor: string;
+    };
+    presenceDetails: null;
+    titlePresence: null;
+    titleSummaries: null;
+    presenceTitleIds: null;
+    detail: {
+        accountTier: string;
+        bio: string;
+        isVerified: boolean;
+        location: string;
+        tenure: string;
+        watermarks: any[];
+        blocked: boolean;
+        mute: boolean;
+        followerCount: number;
+        followingCount: number;
+        hasGamePass: boolean;
+    };
+    communityManagerTitles: null;
+    socialManager: null;
+    broadcast: null;
+    avatar: null;
+    linkedAccounts: {
+      networkName: string;
+      displayName: string;
+      showOnProfile: boolean;
+      isFamilyFriendly: boolean;
+      deeplink: null;
+    }[];
+    colorTheme: string;
+    preferredFlag: string;
+    preferredPlatforms: string[];
 }
 ```
 

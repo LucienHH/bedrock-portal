@@ -114,19 +114,24 @@ module.exports = class Rest {
   }
 
   async getXboxFriends() {
-    return await this.get('https://peoplehub.xboxlive.com/users/me/people/social/decoration/detail,preferredColor', { contractVersion: 5 }).then(res => res.people.map(e => this.#parseXboxProfile(e)));
+    return await this.get('https://peoplehub.xboxlive.com/users/me/people/social/decoration/detail,preferredColor,follower', { contractVersion: 5 }).then(res => res.people.map(e => this.#parseXboxProfile(e)));
   }
 
   async getXboxFollowers() {
-    return await this.get('https://peoplehub.xboxlive.com/users/me/people/followers/decoration/detail,preferredColor', { contractVersion: 5 }).then(res => res.people.map(e => this.#parseXboxProfile(e)));
+    return await this.get('https://peoplehub.xboxlive.com/users/me/people/followers/decoration/detail,preferredColor,follower', { contractVersion: 5 }).then(res => res.people.map(e => this.#parseXboxProfile(e)));
   }
 
   async addXboxFriend(xuid) {
     return await this.put(`https://social.xboxlive.com/users/me/people/xuid(${xuid})`, { contractVersion: 2 });
   }
 
+  async removeXboxFriend(xuid) {
+    return await this.delete(`https://social.xboxlive.com/users/me/people/xuid(${xuid})`, { contractVersion: 2 });
+  }
+
   #parseXboxProfile(profile) {
     return {
+      ...profile,
       xuid: profile.xuid,
       avatar: profile.displayPicRaw,
       gamerscore: profile.gamerScore,

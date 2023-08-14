@@ -23,6 +23,7 @@ const main = async () => {
 
   portal.use(Modules.autoFriendAdd, {          // Automatically adds friends to the session
     inviteOnAdd: true,
+    conditionToMeet: (player) => player.presenceState === 'Online', // Only add friends that are online and remove friends that are offline
   });
 
   // Put your event listeners before portal.start() to ensure you don't miss any events
@@ -49,6 +50,10 @@ const main = async () => {
 
   portal.on('friendAdded', (player) => {       // Emits when a friend is added. Only emitted if autoFriendAdd module is used
     console.log('Friend Added: ', player);
+  });
+
+  portal.on('friendRemoved', (player) => {     // Emits when a friend is removed. Only emitted if autoFriendAdd module is used
+    console.log('Friend Removed: ', player);
   });
 
   await portal.start();                        // Starts the session

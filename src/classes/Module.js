@@ -7,7 +7,10 @@ class Module {
     this.debug = require('debug')(`bedrock-portal:${this.name}`);
   }
   applyOptions(options) {
-    this.options = options;
+    this.options = {
+      ...this.options,
+      ...options,
+    };
   }
   stop() {
     this.stopped = true;
