@@ -97,7 +97,7 @@ Automatically invites players to the game when they send a message in the chat. 
 
 Options:
 - **command**: string - The command to use to invite players (default: 'invite')
-- **checkInterval**: number - How often to check for messages (default: 1000ms)
+- **checkInterval**: number - How often to check for messages (default: 30000ms)
 
 ```js
 const { BedrockPortal, Modules } = require('bedrock-portal');
