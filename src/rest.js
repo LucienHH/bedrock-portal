@@ -81,7 +81,9 @@ module.exports = class Rest {
     const response = await this.get(`https://profile.xboxlive.com/users/${target}/profile/settings`, { params: { settings }, contractVersion: 2 });
 
     const [avatar, gamerscore, gamertag, tier, reputation, colour, realname, bio, location, modernGamertag, modernGamertagSuffix, uniqueModernGamertag, realnameOverride, tenureLevel, watermarks, isQuarantined, linkedAccounts] = response.profileUsers[0].settings.map(e=> e.value);
-    const colourData = await axios.get(colour).then(e => e.data);
+    const colourData = await axios.get(colour, { timeout: 5000 })
+      .then(e => e.data)
+      .catch(() => ({ primaryColor: '000000', secondaryColor: '000000', tertiaryColor: '000000' }));
 
     return {
       xuid: response.profileUsers[0].id,
