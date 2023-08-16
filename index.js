@@ -3,6 +3,7 @@ module.exports = {
   Module : require('./src/classes/Module'),
   Modules: {
     autoFriendAdd: require('./src/modules/autoFriendAdd'),
+    inviteOnMessage: require('./src/modules/inviteOnMessage'),
   },
   Joinability: {
     InviteOnly: 'invite_only',

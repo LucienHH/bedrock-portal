@@ -22,11 +22,16 @@ const main = async () => {
   });
 
   portal.use(Modules.autoFriendAdd, {          // Automatically adds friends to the session
-    inviteOnAdd: true,
-    conditionToMeet: (player) => player.presenceState === 'Online', // Only add friends that are online and remove friends that are offline
-    // checkInterval: 30000,                   // How often to check for friends to add/remove (optional - defaults to 30000ms)
-    // addInterval: 2000,                         // How long to wait between adding friends (optional - defaults to 2000ms)
-    // removeInterval: 2000,                      // How long to wait between removing friends (optional - defaults to 2000ms)
+    inviteOnAdd: false,
+    // conditionToMeet: (player) => player.presenceState === 'Online', // Only add friends that are online and remove friends that are offline
+    // checkInterval: 30000,                                           // How often to check for friends to add/remove (optional - defaults to 30000ms)
+    // addInterval: 2000,                                              // How long to wait between adding friends (optional - defaults to 2000ms)
+    // removeInterval: 2000,                                           // How long to wait between removing friends (optional - defaults to 2000ms)
+  });
+
+  portal.use(Modules.inviteOnMessage, {        // Automatically invites players when they send a message with the specified command
+    command: 'invite',                         // The command to use to invite players (optional - defaults to 'invite')
+    checkInterval: 30000,                      // How often to check for messages (optional - defaults to 30000ms)
   });
 
   // Put your event listeners before portal.start() to ensure you don't miss any events
@@ -57,6 +62,10 @@ const main = async () => {
 
   portal.on('friendRemoved', (player) => {     // Emits when a friend is removed. Only emitted if autoFriendAdd module is used
     console.log('Friend Removed: ', player);
+  });
+
+  portal.on('messageReceived', (message) => {  // Emits when a message is received. Only emitted if inviteOnMessage module is used
+    console.log('Message Received: ', message);
   });
 
   await portal.start();                        // Starts the session

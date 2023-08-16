@@ -78,11 +78,41 @@ portal.use(Modules.autoFriendAdd);
 // or
 
 portal.use(Modules.autoFriendAdd, {
+  // When a friend is added, automatically invite them to the game
   inviteOnAdd: true,
-  conditionToMeet: (player) => player.presenceState === 'Online', // Only add friends that are online and remove friends that are offline
-  // checkInterval: 30000,                      // How often to check for friends to add/remove (optional - defaults to 30000ms)
-  // addInterval: 2000,                         // How long to wait between adding friends (optional - defaults to 2000ms)
-  // removeInterval: 2000,                      // How long to wait between removing friends (optional - defaults to 2000ms)
+  // Only add friends that are online and remove friends that are offline
+  conditionToMeet: (player) => player.presenceState === 'Online',
+  // How often to check for friends to add/remove (optional - defaults to 30000ms)
+  checkInterval: 30000,
+  // How long to wait between adding friends (optional - defaults to 2000ms)
+  addInterval: 2000,
+  // How long to wait between removing friends (optional - defaults to 2000ms)
+  removeInterval: 2000,
+});
+```
+
+### inviteOnMessage
+
+Automatically invites players to the game when they send a message in the chat. `#.use(Modules.inviteOnMessage);`
+
+Options:
+- **command**: string - The command to use to invite players (default: 'invite')
+- **checkInterval**: number - How often to check for messages (default: 1000ms)
+
+```js
+const { BedrockPortal, Modules } = require('bedrock-portal');
+
+const portal = new BedrockPortal(auth, { ... })
+
+portal.use(Modules.inviteOnMessage);
+
+// or
+
+portal.use(Modules.inviteOnMessage, {
+  // The command to use to invite players (optional - defaults to 'invite')
+  command: 'invite',
+  // How often to check for messages (optional - defaults to 1000ms)
+  checkInterval: 30000,
 });
 ```
 
@@ -156,6 +186,9 @@ Emitted when a player is removed as a friend. This event is only emitted when th
 
 **Parameters**
 - player - [Player](#player) object
+
+### portal.on('messageRecieved', (message) => {})
+Emitted when a message is recieved from a player. This event is only emitted when the `inviteOnMessage` module is enabled.
 
 ## Objects
 
