@@ -111,7 +111,7 @@ portal.use(Modules.inviteOnMessage);
 portal.use(Modules.inviteOnMessage, {
   // The command to use to invite players (optional - defaults to 'invite')
   command: 'invite',
-  // How often to check for messages (optional - defaults to 1000ms)
+  // How often to check for messages (optional - defaults to 30000ms)
   checkInterval: 30000,
 });
 ```
