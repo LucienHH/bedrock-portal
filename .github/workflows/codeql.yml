@@ -50,13 +50,10 @@ jobs:
     - name: Run Lint
       run: npm run lint
 
-    - name: Remove node_modules (Linux/macOS)
-      if: runner.os != 'Windows'
-      run: rm -rf ./node_modules
-
-    - name: Remove node_modules (Windows)
+    - name: Remove node_modules (Windows only)
       if: runner.os == 'Windows'
-      run: rmdir /s /q node_modules
+      run: Remove-Item -Recurse -Force node_modules
+      shell: pwsh
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
