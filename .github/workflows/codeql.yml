@@ -9,7 +9,34 @@ on:
     - cron: '37 13 * * 0'
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16.x
+
+    - name: Cache node modules
+      id: cache-npm
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-npm-
+
+    - name: Install Dependencies
+      run: npm install --include=dev
+
+    - name: Run Lint
+      run: npm run lint
+
   analyze:
+    needs: lint
     name: Analyze
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
@@ -33,27 +60,6 @@ jobs:
 
     - name: Checkout repository
       uses: actions/checkout@v3
-
-    - name: Cache node modules
-      uses: actions/cache@v3
-      with:
-        path: node_modules
-        key: ${{ runner.os }}-node-${{ matrix.node }}-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-${{ matrix.node }}-
-          ${{ runner.os }}-node-
-
-    - name: Install Dependencies
-      if: steps.cache.outputs.cache-hit != 'true'
-      run: npm install --include=dev
-
-    - name: Run Lint
-      run: npm run lint
-
-    - name: Remove node_modules (Windows only)
-      if: runner.os == 'Windows'
-      run: Remove-Item -Recurse -Force node_modules
-      shell: pwsh
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
