@@ -40,12 +40,14 @@ jobs:
     - name: Run Lint
       run: npm run lint
 
+    - name: Remove node_modules
+      run: rm -rf ./node_modules
+      
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:
         languages: ${{ matrix.language }}
         config-file: '.github/codeql-config.yml'
-        paths: './,!./node_modules/**'
 
     - name: Autobuild
       uses: github/codeql-action/autobuild@v2
