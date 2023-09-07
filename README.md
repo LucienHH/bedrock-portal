@@ -81,7 +81,7 @@ portal.use(Modules.redirectFromRealm, {
     realms: {
       realmInvite: ''
     }
-  }
+  },
   // Options for the chat command
   chatCommand: {
     // Whether sending the command in chat should trigger an invite (optional - defaults to true)
