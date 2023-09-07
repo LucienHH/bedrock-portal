@@ -2,7 +2,7 @@
 [![NPM version](https://img.shields.io/npm/v/bedrock-portal.svg)](http://npmjs.com/package/bedrock-portal)
 [![Discord](https://img.shields.io/badge/chat-on%20discord-brightgreen.svg)](https://discord.gg/KTyd9HWuBD)
 
-Handles and creates a Minecraft Bedrock game session which will redirect players to the specified server
+Handles and creates a Minecraft Bedrock game session which will redirect players to the specified server. Join our [Discord](https://discord.com/invite/KTyd9HWuBD) for support.
 
 ## Installation
 ```shell
@@ -56,6 +56,43 @@ main();
 ## Modules
 
 Modules are used to extend the functionality of the BedrockPortal class.
+
+### redirectFromRealm
+
+> Requires [bedrock-protocol](https://github.com/PrismarineJS/bedrock-protocol) to be installed. `npm install bedrock-protocol`
+
+Invites players when they join a Realm to the specified server or if they use the chat command. `#.use(Modules.redirectFromRealm, options);`
+
+Options:
+- **clientOptions**: ClientOptions - The client options to use when connecting to the Realm. These are passed directly to a [bedrock-protocol createClient](https://github.com/PrismarineJS/bedrock-protocol/blob/master/docs/API.md#becreateclientoptions--client) function. See the documentation for more information. 
+- **chatCommand**: object - Options for the chat command
+  - **enabled**: boolean - Whether sending the command in chat should trigger an invite (default: true)
+  - **message**: string - The message to send in chat to run the command (default: 'invite')
+  - **cooldown**: number - The cooldown between being able to send the command in chat (default: 60000ms)
+
+```js
+const { BedrockPortal, Modules } = require('bedrock-portal');
+
+const portal = new BedrockPortal(auth, { ... })
+
+portal.use(Modules.redirectFromRealm, {
+  // The client options to use when connecting to the Realm.
+  clientOptions: {
+    realms: {
+      realmInvite: ''
+    }
+  }
+  // Options for the chat command
+  chatCommand: {
+    // Whether sending the command in chat should trigger an invite (optional - defaults to true)
+    enabled: true,
+    // The message to send in chat to run the command (optional - defaults to 'invite')
+    message: 'invite',
+    // The cooldown between being able to send the command in chat (optional - defaults to 60000ms)
+    cooldown: 60000,
+  }
+}
+```
 
 ### autoFriendAdd
 

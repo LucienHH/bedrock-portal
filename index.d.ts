@@ -173,6 +173,8 @@ declare module 'bedrock-portal' {
      * })
      */
     autoFriendAdd: InstanceType<typeof ExtendedModule>
+    inviteOnMessage: InstanceType<typeof ExtendedModule>
+    redirectFromRealm: InstanceType<typeof ExtendedModule>
   }
 
   export interface RTAEvent {

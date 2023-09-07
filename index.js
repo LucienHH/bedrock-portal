@@ -4,6 +4,7 @@ module.exports = {
   Modules: {
     autoFriendAdd: require('./src/modules/autoFriendAdd'),
     inviteOnMessage: require('./src/modules/inviteOnMessage'),
+    redirectFromRealm: require('./src/modules/redirectFromRealm'),
   },
   Joinability: {
     InviteOnly: 'invite_only',
