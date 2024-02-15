@@ -2,8 +2,11 @@
   "name": "bedrock-portal",
   "version": "0.5.1",
   "description": "Creates a joinable session in Minecraft Bedrock Edition that can route players to their a specified host",
-  "main": "index.js",
-  "scripts": {
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+    "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
     "lint": "eslint --ignore-path .gitignore .",
     "fix": "eslint --fix --ignore-path .gitignore ."
   },
@@ -21,11 +24,18 @@
     "axios": "^1.0.0",
     "debug": "^4.3.4",
     "prismarine-auth": "^2.2.0",
+    "tiny-typed-emitter": "^2.1.0",
     "uuid": "^9.0.0",
-    "xbox-rta": "^1.0.0"
+    "xbox-rta": "^2.0.1"
   },
   "devDependencies": {
+    "@types/debug": "^4.1.12",
+    "@types/node": "^20.10.6",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^6.17.0",
+    "@typescript-eslint/parser": "^6.17.0",
     "bedrock-portal": "file:.",
-    "eslint": "^8.33.0"
+    "eslint": "^8.33.0",
+    "typescript": "^5.3.3"
   }
 }

@@ -20,7 +20,6 @@ This package is not meant to be used with your main account. It is meant to be u
 - options
   - **ip** - The IP address of the server to redirect players to (required)
   - **port** - The port of the server to redirect players to (default: 19132)
-  - **disableAltCheck** - Disables the alt check (default: false)
   - **joinability** - The joinability of the session (default: Joinability.FriendsOfFriends)
   - **world** - The world config to use for the session. Changes the session card which is displayed in the Minecraft client.
 	  - **hostName** - string (default: '{gamertag}'s Portal')

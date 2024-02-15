@@ -3,3 +3,5 @@ node_modules/
 archive
 .vscode
 *-cache.json
+dist/
+examples/research
