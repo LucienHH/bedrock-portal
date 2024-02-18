@@ -48,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'javascript' ]
+        language: [ 'typescript' ]
         os: [ 'ubuntu-20.04', 'ubuntu-22.04', 'macos-11', 'macos-12', 'macos-13', 'windows-2019', 'windows-latest' ]
         node: [ 16.x, 18.x, 20.x ]
 
