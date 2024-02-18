@@ -19,14 +19,14 @@ This package is not meant to be used with your main account. It is meant to be u
 - authflow - Takes an **Authflow** instance from [prismarine-auth](https://github.com/PrismarineJS/prismarine-auth), you can see the documentation for this [here.](https://github.com/PrismarineJS/prismarine-auth#authflow)
 - options
   - **ip** - The IP address of the server to redirect players to (required)
-  - **port** - The port of the server to redirect players to (default: 19132)
-  - **joinability** - The joinability of the session (default: Joinability.FriendsOfFriends)
-  - **world** - The world config to use for the session. Changes the session card which is displayed in the Minecraft client.
-	  - **hostName** - string (default: '{gamertag}'s Portal')
-	  - **name** - string (default: 'BedrockPortal')
-	  - **version** - string (default: '{BedrockPortal version}')
-	  - **memberCount** - number (default: 0)
-	  - **maxMemberCount** - number (default: 10)
+  - **port** - The port of the server to redirect players to | default: 19132
+  - **joinability** - The joinability of the session  | default: FriendsOfFriends
+  - **world** - The world config to use for the session. Changes the session card which is displayed in the Minecraft client. (optional)
+	  - **hostName** - string
+	  - **name** - string
+	  - **version** - string
+	  - **memberCount** - number
+	  - **maxMemberCount** - number
 
 ### Create a session redirect to a server
 ```js
@@ -37,9 +37,12 @@ const main = async () => {
   const auth = new Authflow('example', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' });
   
   const portal = new BedrockPortal(auth, {
-    ip: 'geyserconnect.net', // The server IP & port to redirect players to
+    // The server IP & port to redirect players to
+    ip: 'geyserconnect.net',
     port: 19132,
-    joinability: Joinability.InviteOnly, // The joinability of the session. Joinability.FriendsOfFriends, Joinability.FriendsOnly, Joinability.InviteOnly
+
+     // The joinability of the session. Joinability.FriendsOfFriends, Joinability.FriendsOnly, Joinability.InviteOnly
+    joinability: Joinability.FriendsOfFriends
   });
 
   await portal.start();
@@ -56,7 +59,44 @@ main();
 
 Modules are used to extend the functionality of the BedrockPortal class.
 
-### redirectFromRealm
+### MultipleAccounts
+
+Allows the portal to use multiple accounts to redirect players to the server. `#.use(Modules.MultipleAccounts, options);`
+
+Options:
+- **accounts**: Authflow[] - An array of authflows from [prismarine-auth](https://github.com/PrismarineJS/prismarine-auth), these accounts are automatically added to the host session and allows players to add them as a friend to join the game. (required)
+
+```js
+const { Authflow, Titles } = require('prismarine-auth')
+const { BedrockPortal, Modules } = require('bedrock-portal')
+
+const main = async () => {
+  const auth = new Authflow('example', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' })
+
+  const portal = new BedrockPortal(auth, {
+    ip: 'geyserconnect.net',
+    port: 19132,
+  })
+
+  portal.use(Modules.AutoFriendAdd, {
+    inviteOnAdd: true,
+  })
+
+  portal.use(Modules.MultipleAccounts, {
+    accounts: [
+      new Authflow('account1', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' }),
+      new Authflow('account2', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' }),
+    ],
+  })
+
+  await portal.start()
+}
+
+main()
+```
+
+
+### RedirectFromRealm
 
 > Requires [bedrock-protocol](https://github.com/PrismarineJS/bedrock-protocol) to be installed. `npm install bedrock-protocol`
 
@@ -74,7 +114,7 @@ const { BedrockPortal, Modules } = require('bedrock-portal');
 
 const portal = new BedrockPortal(auth, { ... })
 
-portal.use(Modules.redirectFromRealm, {
+portal.use(Modules.RedirectFromRealm, {
   // The client options to use when connecting to the Realm.
   clientOptions: {
     realms: {
@@ -93,7 +133,7 @@ portal.use(Modules.redirectFromRealm, {
 }
 ```
 
-### autoFriendAdd
+### AutoFriendAdd
 
 Automatically adds the account's followers as friends and invites them to the game. `#.use(Modules.autoFriendAdd);`
 
@@ -109,11 +149,11 @@ const { BedrockPortal, Modules } = require('bedrock-portal');
 
 const portal = new BedrockPortal(auth, { ... })
 
-portal.use(Modules.autoFriendAdd);
+portal.use(Modules.AutoFriendAdd);
 
 // or
 
-portal.use(Modules.autoFriendAdd, {
+portal.use(Modules.AutoFriendAdd, {
   // When a friend is added, automatically invite them to the game
   inviteOnAdd: true,
   // Only add friends that are online and remove friends that are offline
@@ -127,7 +167,7 @@ portal.use(Modules.autoFriendAdd, {
 });
 ```
 
-### inviteOnMessage
+### InviteOnMessage
 
 Automatically invites players to the game when they send a message in the chat. `#.use(Modules.inviteOnMessage);`
 
@@ -140,11 +180,11 @@ const { BedrockPortal, Modules } = require('bedrock-portal');
 
 const portal = new BedrockPortal(auth, { ... })
 
-portal.use(Modules.inviteOnMessage);
+portal.use(Modules.InviteOnMessage);
 
 // or
 
-portal.use(Modules.inviteOnMessage, {
+portal.use(Modules.InviteOnMessage, {
   // The command to use to invite players (optional - defaults to 'invite')
   command: 'invite',
   // How often to check for messages (optional - defaults to 30000ms)
@@ -169,255 +209,47 @@ const myModule = class MyModule extends Module {
     }
   }
 
-  async run(portal, { rest, rta }) {
+  async run(portal) {
     // portal - The BedrockPortal instance
-    // rest - The REST API instance
-    // rta - The RTA API instance
 
     // Do stuff here
   }
+
+  async stop() {
+    super.stop();
+    // Do stuff when the module is stopped
+  }
 }
 
-portal.use(myModule);
+portal.use(myModule, {
+  option1: false,
+});
+
 ```
 
 ## Events
 
-### portal.on('sessionCreated', (session) => {})
+### portal.on('sessionCreated', (session) => void)
 Emitted when a session is created.
 
-**Parameters**
-- session - [Session](#session) object
-
-
-### portal.on('sessionUpdated', (session) => {})
+### portal.on('sessionUpdated', (session) => void)
 Emitted when a session is updated.
 
-**Parameters**
-- session - [Session](#session) object
-
-
-### portal.on('playerJoin', (player) => {})
+### portal.on('playerJoin', (player) => void)
 Emitted when a player joins the session.
 
-**Parameters**
-- player - [Player](#player) object
-
-
-### portal.on('playerLeave', (player) => {})
+### portal.on('playerLeave', (player) => void)
 Emitted when a player leaves the session.
 
-**Parameters**
-- player - [Player](#player) object
 
-
-### portal.on('friendAdded', (player) => {})
+### portal.on('friendAdded', (player) => void)
 Emitted when a player is added as a friend. This event is only emitted when the `autoFriendAdd` module is enabled.
 
-**Parameters**
-- player - [Player](#player) object
-
-### portal.on('friendRemoved', (player) => {})
+### portal.on('friendRemoved', (player) => void)
 Emitted when a player is removed as a friend. This event is only emitted when the `autoFriendAdd` module is enabled.
 
-**Parameters**
-- player - [Player](#player) object
-
-### portal.on('messageRecieved', (message) => {})
+### portal.on('messageRecieved', (message) => void)
 Emitted when a message is recieved from a player. This event is only emitted when the `inviteOnMessage` module is enabled.
-
-## Objects
-
-### Player
-
-```ts
-{
-  profile?: {
-    xuid: string,
-    avatar: string,
-    gamerscore: string,
-    gamertag: string,
-    tier: string,
-    reputation: string,
-    colour: {
-      primaryColour: string,
-      secondaryColour: string,
-      tertiaryColour: string
-    },
-    realname: string,
-    bio: string,
-    location: string,
-    modernGamertag: string,
-    modernGamertagSuffix: string,
-    uniqueModernGamertag: string,
-    realnameOverride: string,
-    tenureLevel: string,
-    watermarks: string,
-    isQuarantined: boolean,
-    linkedAccounts: []
-  }
-  session?: {
-    titleId: string
-    joinTime: string
-    index: number
-    connectionId: string
-    subscriptionId: string
-  }
-}
-```
-
-### Session
-
-```ts
-{
-  membersInfo: {
-    first: number,
-    next: number,
-    count: number,
-    accepted: number,
-    active: number
-  },
-  constants: {
-    system: {
-      readyRemovalTimeout: number,
-      reservedRemovalTimeout: number,
-      sessionEmptyTimeout: number,
-      inactiveRemovalTimeout: number,
-      version: number,
-      maxMembersCount: number,
-      visibility: string,
-      capabilities: {
-        connectivity: boolean,
-        connectionRequiredForActiveMembers: boolean,
-        gameplay: boolean,
-        crossPlay: boolean,
-        userAuthorizationStyle: boolean
-      },
-      inviteProtocol: string,
-      memberInitialization: {
-        membersNeededToStart: number,
-      }
-    },
-    custom: {}
-  },
-  properties: {
-    system: {
-      joinRestriction: 'followed' | 'local',
-      readRestriction: string,
-      turn: []
-    },
-    custom: {
-      Joinability: string,
-      hostName: string,
-      ownerId: string,
-      rakNetGUID: string,
-      version: string,
-      worldName: string,
-      worldType: string,
-      protocol: number,
-      MemberCount: number,
-      MaxMemberCount: number,
-      BroadcastSetting: number,
-      UsesWebSocketsWebRTCSignaling: boolean,
-      UsesMPSDWebRTCSignaling: boolean,
-      netherNetEnabled: boolean,
-      OnlineCrossPlatformGame: boolean,
-      CrossPlayDisabled: boolean,
-      TitleId: number,
-      SupportedConnections: SessionConnection[],
-      levelId: string,
-      LanGame: boolean
-    }
-  },
-  servers: {},
-  members: {
-    [index: number]: SessionMember
-  }
-  correlationId: string,
-  contractVersion: number,
-  branch: string,
-  changeNumber: number,
-  startTime: string
-}
-```
-
-### RawPlayer
-
-```ts
-{
-    xuid: string;
-    isFavorite: boolean;
-    isFollowingCaller: boolean;
-    isFollowedByCaller: boolean;
-    isIdentityShared: boolean;
-    addedDateTimeUtc: string;
-    displayName: string;
-    realName: string;
-    displayPicRaw: string;
-    showUserAsAvatar: string;
-    gamertag: string;
-    gamerScore: string;
-    modernGamertag: string;
-    modernGamertagSuffix: string;
-    uniqueModernGamertag: string;
-    xboxOneRep: string;
-    presenceState: string;
-    presenceText: string;
-    presenceDevices: null | any[];
-    isBroadcasting: boolean;
-    isCloaked: null | boolean;
-    isQuarantined: boolean;
-    isXbox360Gamerpic: boolean;
-    lastSeenDateTimeUtc: string;
-    suggestion: null;
-    recommendation: null;
-    search: null;
-    titleHistory: null;
-    multiplayerSummary: null;
-    recentPlayer: null;
-    follower: {
-        text: string;
-        followedDateTime: string;
-    };
-    preferredColor: {
-        primaryColor: string;
-        secondaryColor: string;
-        tertiaryColor: string;
-    };
-    presenceDetails: null;
-    titlePresence: null;
-    titleSummaries: null;
-    presenceTitleIds: null;
-    detail: {
-        accountTier: string;
-        bio: string;
-        isVerified: boolean;
-        location: string;
-        tenure: string;
-        watermarks: any[];
-        blocked: boolean;
-        mute: boolean;
-        followerCount: number;
-        followingCount: number;
-        hasGamePass: boolean;
-    };
-    communityManagerTitles: null;
-    socialManager: null;
-    broadcast: null;
-    avatar: null;
-    linkedAccounts: {
-      networkName: string;
-      displayName: string;
-      showOnProfile: boolean;
-      isFamilyFriendly: boolean;
-      deeplink: null;
-    }[];
-    colorTheme: string;
-    preferredFlag: string;
-    preferredPlatforms: string[];
-}
-```
-
 
 ## Debugging
 

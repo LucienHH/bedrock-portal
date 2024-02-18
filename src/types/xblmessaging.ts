@@ -17,10 +17,10 @@ export interface Conversation {
   isRead: boolean;
   muted: boolean;
   folder: string;
-  lastMessage: LastMessage;
+  lastMessage: Message;
 }
 
-export interface LastMessage {
+export interface Message {
   contentPayload: ContentPayload;
   timestamp: string;
   lastUpdateTimestamp: string;
