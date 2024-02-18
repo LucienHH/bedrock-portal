@@ -24,8 +24,8 @@ export default class IniteOnMessage extends Module {
   async run(portal: BedrockPortal, rest: Rest, _rta: XboxRTA) {
 
     const initeOnMessage = async () => {
-      const primaryMessages = await rest.getInboxMessages('primary')
-      const secondaryMessages = await rest.getInboxMessages('secondary')
+      const primaryMessages = await portal.host.rest.getInboxMessages('primary')
+      const secondaryMessages = await portal.host.rest.getInboxMessages('secondary')
 
       const messages = [...primaryMessages.conversations, ...secondaryMessages.conversations]
 

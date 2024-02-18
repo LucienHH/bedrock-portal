@@ -4,17 +4,13 @@ import { Authflow } from 'prismarine-auth'
 import { EventResponse, XboxRTA } from 'xbox-rta'
 import { TypedEmitter } from 'tiny-typed-emitter'
 
+import Host from './classes/Host'
 import Player from './classes/Player'
 import Module from './classes/Module'
 
 import { SessionConfig, Joinability, JoinabilityConfig } from './common/constants'
 
-import Rest from './rest'
-
 import eventHandler from './handlers/Event'
-import subscribeHandler from './handlers/Subscribe'
-
-import { Person } from './types/peoplehub'
 import { RESTSessionResponse, SessionRequest } from './types/sessiondirectory'
 import { LastMessage } from './types/xblmessaging'
 
@@ -123,9 +119,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   public authflow: Authflow
 
-  public rest: Rest
-
-  public rta: XboxRTA
+  public host: Host
 
   public options: BedrockPortalOptions
 
@@ -134,8 +128,6 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
   public players: Map<string, Player>
 
   public modules: { [x: string]: Module } | undefined
-
-  public sessionOwner: Person | null = null
 
   constructor(authflow: Authflow, options: Partial<BedrockPortalOptions>) {
     super()
@@ -160,9 +152,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
     this.authflow = authflow
 
-    this.rest = new Rest(authflow)
-
-    this.rta = new XboxRTA(authflow)
+    this.host = new Host(this, this.authflow)
 
     this.session = { name: '', subscriptionId: '' }
 
@@ -180,23 +170,14 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    */
   async start() {
 
-    const auth = await this.authflow.getXboxToken()
 
-    this.sessionOwner = await this.rest.getProfile(auth.userXUID)
-
-    await this.rta.connect()
-
-    const connectionId = await this.rta.subscribe('https://sessiondirectory.xboxlive.com/connections/')
-      .then(e => (e.data as any).ConnectionId as string)
+    await this.host.connect()
 
     this.session.name = uuidV4()
-    this.session.subscriptionId = uuidV4()
 
-    const session = await this.createAndPublishSession(connectionId)
+    const session = await this.createAndPublishSession()
 
-    this.rta.on('subscribe', (event) => subscribeHandler(this, event))
-
-    this.rta.on('event', (event) => eventHandler(this, event))
+    this.host.rta!.on('event', (event) => eventHandler(this, event))
 
     if (this.modules) {
       Object.values(this.modules).forEach(mod => {
@@ -213,9 +194,13 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    * Ends the BedrockPortal instance.
    */
   async end(resume = false) {
-    await this.rta.destroy()
 
-    await this.rest.leaveSession(this.session.name)
+    if (this.host.rta) {
+      await this.host.rta.destroy()
+    }
+
+    await this.host.rest.leaveSession(this.session.name)
+      .catch(() => { debug('Failed to leave session as host') })
 
     if (this.modules) {
       for (const mod of Object.values(this.modules)) {
@@ -244,12 +229,12 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
   async invitePlayer(identifier: string) {
     debug(`Inviting player, identifier: ${identifier}`)
 
-    const profile = await this.rest.getProfile(identifier)
+    const profile = await this.host.rest.getProfile(identifier)
       .catch(() => { throw new Error(`Failed to get profile for identifier: ${identifier}`) })
 
     debug(`Inviting player, Got profile, xuid: ${profile.xuid}`)
 
-    await this.rest.sendInvite(this.session.name, profile.xuid)
+    await this.host.rest.sendInvite(this.session.name, profile.xuid)
 
     debug(`Invited player, xuid: ${profile.xuid}`)
   }
@@ -259,14 +244,14 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    * @param count The new member count.
    */
   async updateMemberCount(count: number) {
-    await this.rest.updateMemberCount(this.session.name, count)
+    await this.host.rest.updateMemberCount(this.session.name, count)
   }
 
   /**
    * Gets the current session of the BedrockPortal instance.
    */
   async getSession() {
-    return await this.rest.getSession(this.session.name)
+    return await this.host.rest.getSession(this.session.name)
   }
 
   /**
@@ -274,7 +259,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    * @param payload The payload to update the session with.
    */
   async updateSession(payload: SessionRequest) {
-    await this.rest.updateSession(this.session.name, payload)
+    await this.host.rest.updateSession(this.session.name, payload)
   }
 
   /**
@@ -302,14 +287,14 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     this.modules[mod.name] = mod
   }
 
-  private async createAndPublishSession(connectionId: string) {
     this.players = new Map()
+  private async createAndPublishSession() {
 
-    await this.updateSession(this.createSessionBody(connectionId))
+    await this.updateSession(this.createSessionBody())
 
     debug(`Created session, name: ${this.session.name}`)
 
-    await this.rest.setActivity(this.session.name)
+    await this.host.rest.setActivity(this.session.name)
 
     const session = await this.getSession()
 
@@ -320,9 +305,9 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     return session
   }
 
-  private createSessionBody(connectionId: string): SessionRequest {
+  private createSessionBody(): SessionRequest {
 
-    if (!this.sessionOwner) throw new Error('No session owner')
+    if (!this.host.profile || !this.host.connectionId) throw new Error('No session owner')
 
     const joinability = JoinabilityConfig[this.options.joinability]
 
@@ -340,7 +325,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
           MemberCount: Number(this.options.world.memberCount),
           MaxMemberCount: Number(this.options.world.maxMemberCount),
           Joinability: joinability.joinability,
-          ownerId: this.sessionOwner.xuid,
+          ownerId: this.host.profile.xuid,
           rakNetGUID: genRaknetGUID(),
           worldType: 'Survival',
           protocol: SessionConfig.MiencraftProtocolVersion,
@@ -363,16 +348,16 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
         me: {
           constants: {
             system: {
-              xuid: this.sessionOwner.xuid,
+              xuid: this.host.profile.xuid,
               initialize: true,
             },
           },
           properties: {
             system: {
               active: true,
-              connection: connectionId,
+              connection: this.host.connectionId,
               subscription: {
-                id: this.session.subscriptionId,
+                id: this.host.subscriptionId,
                 changeTypes: ['everything'],
               },
             },
