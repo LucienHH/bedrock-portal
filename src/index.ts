@@ -1,7 +1,10 @@
+import type { RESTSessionResponse, SessionRequest } from './types/sessiondirectory'
+import type { Message } from './types/xblmessaging'
+
 import debugFn from 'debug'
 import { v4 as uuidV4 } from 'uuid'
+import { EventResponse } from 'xbox-rta'
 import { Authflow } from 'prismarine-auth'
-import { EventResponse, XboxRTA } from 'xbox-rta'
 import { TypedEmitter } from 'tiny-typed-emitter'
 
 import Host from './classes/Host'
@@ -11,12 +14,11 @@ import Module from './classes/Module'
 import { SessionConfig, Joinability, JoinabilityConfig } from './common/constants'
 
 import eventHandler from './handlers/Event'
-import { RESTSessionResponse, SessionRequest } from './types/sessiondirectory'
-import { LastMessage } from './types/xblmessaging'
 
 import AutoFriendAdd from './modules/autoFriendAdd'
 import InviteOnMessage from './modules/inviteOnMessage'
 import RedirectFromRealm from './modules/redirectFromRealm'
+import MultipleAccounts from './modules/multipleAccounts'
 
 const debug = debugFn('bedrock-portal')
 
@@ -39,13 +41,6 @@ type BedrockPortalOptions = {
    * @default 19132
    */
   port: number,
-
-  /**
-   * If true disables the alt check
-   * @default false
-   * @warning We recommend using an alt account with BedrockPortal instead of disabling the alt check.
-   */
-  disableAltCheck: boolean,
 
   /**
    * The joinability of the session.
@@ -114,7 +109,7 @@ interface PortalEvents {
   rtaEvent: (event: EventResponse) => void
   playerJoin: (player: Player) => void
   playerLeave: (player: Player) => void
-  messageRecieved: (message: LastMessage) => void
+  messageRecieved: (message: Message) => void
   friendRemoved: (player: Player) => void
   friendAdded: (player: Player) => void
 }
@@ -127,7 +122,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   public options: BedrockPortalOptions
 
-  public session: { name: string, subscriptionId: string }
+  public session: { name: string }
 
   public players: Map<string, Player>
 
@@ -139,13 +134,12 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     this.options = {
       ip: '',
       port: 19132,
-      disableAltCheck: false,
       joinability: Joinability.FriendsOfFriends,
       ...options,
       world: {
-        hostName: 'Bedrock Portal v0.5.1',
+        hostName: 'Bedrock Portal v0.6.0',
         name: 'By LucienHH',
-        version: '0.5.1',
+        version: '0.6.0',
         memberCount: 0,
         maxMemberCount: 10,
         ...options.world,
@@ -158,7 +152,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
     this.host = new Host(this, this.authflow)
 
-    this.session = { name: '', subscriptionId: '' }
+    this.session = { name: '' }
 
     this.players = new Map()
 
@@ -168,7 +162,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
   validateOptions(options: BedrockPortalOptions) {
     if (!options.ip) throw new Error('No IP provided')
     if (!options.port) throw new Error('No port provided')
-    if (!Object.keys(Joinability).includes(options.joinability)) throw new Error('Invalid joinability - Expected one of ' + Object.keys(Joinability).join(', '))
+    if (!Object.values(Joinability).includes(options.joinability)) throw new Error('Invalid joinability - Expected one of ' + Object.keys(Joinability).join(', '))
   }
 
   /**
@@ -381,6 +375,7 @@ const Modules = {
   AutoFriendAdd,
   InviteOnMessage,
   RedirectFromRealm,
+  MultipleAccounts,
 }
 
 export { Modules }
