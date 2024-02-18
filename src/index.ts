@@ -104,6 +104,10 @@ type BedrockPortalOptions = {
   },
 };
 
+interface ExtendedModule {
+  new (...args: any[]): Module;
+}
+
 interface PortalEvents {
   sessionCreated: (session: RESTSessionResponse) => void
   sessionUpdated: (session: RESTSessionResponse) => void
@@ -127,7 +131,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   public players: Map<string, Player>
 
-  public modules: { [x: string]: Module } | undefined
+  public modules: Map<string, Module> = new Map()
 
   constructor(authflow: Authflow, options: Partial<BedrockPortalOptions>) {
     super()
@@ -157,6 +161,8 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     this.session = { name: '', subscriptionId: '' }
 
     this.players = new Map()
+
+    this.modules = new Map()
   }
 
   validateOptions(options: BedrockPortalOptions) {
@@ -180,11 +186,11 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     this.host.rta!.on('event', (event) => eventHandler(this, event))
 
     if (this.modules) {
-      Object.values(this.modules).forEach(mod => {
-        mod.run(this, this.rest, this.rta)
+      for (const mod of this.modules.values()) {
+        mod.run(this)
           .then(() => debug(`Module ${mod.name} has run`))
           .catch(e => debug(`Module ${mod.name} failed to run`, e))
-      })
+      }
     }
 
     this.emit('sessionCreated', session)
@@ -203,8 +209,9 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
       .catch(() => { debug('Failed to leave session as host') })
 
     if (this.modules) {
-      for (const mod of Object.values(this.modules)) {
-        mod.stop()
+      for (const mod of this.modules.values()) {
+        debug(`Stopping module: ${mod.name}`)
+        await mod.stop()
       }
     }
 
@@ -272,19 +279,17 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    *   inviteOnAdd: true
    * })
    */
-  use(mod: Module, options = {}) {
+  use(mod: ExtendedModule, options = {}) {
+    const constructed = new mod()
 
-    debug(`Enabled module: ${mod.name}`)
+    debug(`Enabled module: ${constructed.name}`)
 
-    this.modules = this.modules || {}
+    if (!(constructed instanceof Module)) throw new Error('Module must extend the base module')
+    if (this.modules.has(constructed.name)) throw new Error(`Module with name ${constructed.name} has already been loaded`)
 
-    // if (typeof mod === 'function') mod = new mod();
-    if (!(mod instanceof Module)) throw new Error('Module must extend the base module')
-    if (this.modules[mod.name]) throw new Error(`Module with name ${mod.name} has already been loaded`)
+    constructed.applyOptions(options)
 
-    mod.applyOptions(options)
-
-    this.modules[mod.name] = mod
+    this.modules.set(constructed.name, constructed)
   }
 
     this.players = new Map()

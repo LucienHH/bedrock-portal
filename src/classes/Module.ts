@@ -1,7 +1,5 @@
 import debugFn from 'debug'
-import { XboxRTA } from 'xbox-rta'
 
-import Rest from '../rest'
 import { BedrockPortal } from '..'
 
 export default class Module {
@@ -35,11 +33,11 @@ export default class Module {
     }
   }
 
-  stop() {
+  async stop() {
     this.stopped = true
   }
 
-  async run(_portal: BedrockPortal, _rest: Rest, _rta: XboxRTA) {
+  async run(_portal: BedrockPortal) {
     throw Error('Module.run() must be implemented')
   }
 

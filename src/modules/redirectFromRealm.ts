@@ -1,6 +1,3 @@
-import type { XboxRTA } from 'xbox-rta'
-
-import type Rest from '../rest'
 import type { BedrockPortal } from '..'
 
 import Module from '../classes/Module'
@@ -34,7 +31,7 @@ export default class RedirectFromRealm extends Module {
     }
   }
 
-  async run(portal: BedrockPortal, _rest: Rest, _rta: XboxRTA) {
+  async run(portal: BedrockPortal) {
 
     const { clientOptions } = this.options
 
@@ -56,7 +53,7 @@ export default class RedirectFromRealm extends Module {
 
       this.client.once('spawn', () => {
 
-        this.heartbeat = setInterval(async () => {
+        this.heartbeat = setInterval(() => {
 
           this.debug(`Sending heartbeat to Realm - Status: ${this.client?.status}`)
 
@@ -68,7 +65,7 @@ export default class RedirectFromRealm extends Module {
 
           this.debug('Attempting to reconnect to Realm')
 
-          return await this.initClient(options, portal).catch(err => {
+          return this.initClient(options, portal).catch(err => {
             this.debug(`Error reconnecting to Realm - ${err.message}`)
           })
 
@@ -100,5 +97,17 @@ export default class RedirectFromRealm extends Module {
       })
 
     })
+  }
+
+  async stop() {
+    super.stop()
+
+    if (this.heartbeat) clearInterval(this.heartbeat)
+
+    if (this.client) {
+      this.client.disconnect()
+      this.client = null
+    }
+
   }
 }

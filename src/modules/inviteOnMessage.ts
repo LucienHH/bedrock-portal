@@ -1,12 +1,11 @@
-import type { XboxRTA } from 'xbox-rta'
-
-import type Rest from '../rest'
 import type { BedrockPortal } from '../index'
 import type { Conversation } from '../types/xblmessaging'
 
 import Module from '../classes/Module'
 
 export default class IniteOnMessage extends Module {
+
+  public interval: NodeJS.Timeout | null = null
 
   public cache: Conversation[]
 
@@ -21,7 +20,7 @@ export default class IniteOnMessage extends Module {
     this.cache = []
   }
 
-  async run(portal: BedrockPortal, rest: Rest, _rta: XboxRTA) {
+  async run(portal: BedrockPortal) {
 
     const initeOnMessage = async () => {
       const primaryMessages = await portal.host.rest.getInboxMessages('primary')
@@ -66,14 +65,18 @@ export default class IniteOnMessage extends Module {
       this.cache = contentMessages
     }
 
-    const messageInterval = setInterval(() => {
-      if (this.stopped) {
-        clearInterval(messageInterval)
-        return
-      }
+    this.interval = setInterval(() => {
       initeOnMessage()
         .catch(error => this.debug(`Error: ${error.message}`, error))
     }, this.options.checkInterval)
 
   }
+
+  async stop() {
+    super.stop()
+    if (this.interval) {
+      clearInterval(this.interval)
+    }
+  }
+
 }
