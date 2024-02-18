@@ -176,6 +176,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    */
   async start() {
 
+    this.players = new Map()
 
     await this.host.connect()
 
@@ -292,7 +293,6 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     this.modules.set(constructed.name, constructed)
   }
 
-    this.players = new Map()
   private async createAndPublishSession() {
 
     await this.updateSession(this.createSessionBody())
