@@ -121,8 +121,27 @@ export default class Rest {
     await this.updateSession(sessionName, { properties: { custom: { MemberCount: Number(count) } } })
   }
 
+  async addConnection(sessionName: string, xuid: string, connectionId: string, subscriptionId: string) {
+    const payload: SessionRequest = {
+      members: {
+        me: {
+          constants: { system: { xuid, initialize: true } },
+          properties: {
+            system: { active: true, connection: connectionId, subscription: { id: subscriptionId, changeTypes: ['everything'] } },
+          },
+        },
+      },
+    }
+
+    await this.updateSession(sessionName, payload)
+  }
+
   async updateConnection(sessionName: string, connectionId: string) {
-    await this.updateSession(sessionName, { members: { me: { properties: { system: { active: true, connection: connectionId } } } } })
+    const payload: SessionRequest = {
+      members: { me: { properties: { system: { active: true, connection: connectionId } } } },
+    }
+
+    await this.updateSession(sessionName, payload)
   }
 
   async leaveSession(sessionName: string) {
@@ -160,11 +179,11 @@ export default class Rest {
   }
 
   async addXboxFriend(xuid: string) {
-    return this.put(`https://social.xboxlive.com/users/me/people/xuid(${xuid})`, { contractVersion: '2' })
+    await this.put(`https://social.xboxlive.com/users/me/people/xuid(${xuid})`, { contractVersion: '2' })
   }
 
   async removeXboxFriend(xuid: string) {
-    return this.delete(`https://social.xboxlive.com/users/me/people/xuid(${xuid})`, { contractVersion: '2' })
+    await this.delete(`https://social.xboxlive.com/users/me/people/xuid(${xuid})`, { contractVersion: '2' })
   }
 
   async getInboxMessages(inbox: 'primary' | 'secondary') {
