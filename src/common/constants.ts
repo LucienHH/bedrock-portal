@@ -23,17 +23,17 @@ export enum Joinability {
 
 export const JoinabilityConfig = {
   [Joinability.InviteOnly]: {
-    joinability: Joinability.InviteOnly,
+    joinability: 'invite_only',
     joinRestriction: 'local',
     broadcastSetting: 1,
   },
   [Joinability.FriendsOnly]: {
-    joinability: Joinability.FriendsOnly,
+    joinability: 'joinable_by_friends',
     joinRestriction: 'followed',
     broadcastSetting: 2,
   },
   [Joinability.FriendsOfFriends]: {
-    joinability: Joinability.FriendsOfFriends,
+    joinability: 'joinable_by_friends',
     joinRestriction: 'followed',
     broadcastSetting: 3,
   },
