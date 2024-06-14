@@ -104,7 +104,7 @@ const main = async () => {
   })
 
   // Emits when a message is received. Only emitted if inviteOnMessage module is used
-  portal.on('messageRecieved', (message) => {
+  portal.on('messageReceived', (message) => {
     console.log('Message Received: ', message)
   })
 

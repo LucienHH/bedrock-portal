@@ -45,7 +45,7 @@ export default class IniteOnMessage extends Module {
       if (newMessages.length === 0) return
 
       for (const message of newMessages) {
-        portal.emit('messageRecieved', message.lastMessage)
+        portal.emit('messageReceived', message.lastMessage)
 
         const senderXuid = message.lastMessage.sender
 
