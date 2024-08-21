@@ -1,12 +1,14 @@
 import axios, { AxiosRequestConfig } from 'axios'
 
 import { Authflow } from 'prismarine-auth'
+import { parse, stringify } from 'json-bigint'
 
 import { SessionConfig } from './common/constants'
 
 import { RESTPeoplehubResponse } from './types/peoplehub'
 import { RESTXblmessageInboxResponse } from './types/xblmessaging'
 import { SessionRequest, RESTSessionResponse, SessionHandlePayload } from './types/sessiondirectory'
+
 
 type RequestHeaders = {
   [x: string]: string | boolean | number | undefined;
@@ -72,7 +74,11 @@ export default class Rest {
     if (config.params) payload.params = config.params
     if (config.data) payload.data = config.data
 
-    return axios(payload).then(e => e.data)
+    return axios({
+      ...payload,
+      transformResponse: [data => parse(data)],
+      transformRequest: [data => stringify(data)],
+    }).then(e => e.data)
   }
 
   async sendHandle(payload: SessionHandlePayload) {

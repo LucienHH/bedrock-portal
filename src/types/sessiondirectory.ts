@@ -101,7 +101,8 @@ export interface SessionConnection {
   ConnectionType: number,
   HostIpAddress: string,
   HostPort: number,
-  RakNetGUID: string,
+  NetherNetId: bigint,
+  WebRTCNetworkId: bigint
 }
 
 export interface SessionRequest {
@@ -126,7 +127,7 @@ export interface SessionRequest {
       BroadcastSetting?: number,
       LanGame?: boolean,
       TransportLayer?: number,
-      WebRTCNetworkId?: number,
+      WebRTCNetworkId?: bigint,
       OnlineCrossPlatformGame?: boolean,
       CrossPlayDisabled?: boolean,
       TitleId?: number,

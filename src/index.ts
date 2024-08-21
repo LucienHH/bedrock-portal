@@ -19,15 +19,23 @@ import AutoFriendAdd from './modules/autoFriendAdd'
 import InviteOnMessage from './modules/inviteOnMessage'
 import RedirectFromRealm from './modules/redirectFromRealm'
 import MultipleAccounts from './modules/multipleAccounts'
+import { start_game } from './common/start_game'
+
+// @ts-expect-error - index.d.ts isn't updated
+import { Server } from '@lucienhh/bedrock-protocol'
 
 const debug = debugFn('bedrock-portal')
 
-const genRaknetGUID = () => {
-  const chars = '0123456789'
-  let result = ''
-  for (let i = 20; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)]
+const getRandomUint64 = () => {
+  // Generate two 32-bit random integers
+  const high = Math.floor(Math.random() * 0xFFFFFFFF)
+  const low = Math.floor(Math.random() * 0xFFFFFFFF)
+
+  // Combine them to create a 64-bit unsigned integer
+  const result = (BigInt(high) << 32n) | BigInt(low)
   return result
 }
+
 
 type BedrockPortalOptions = {
 
@@ -62,6 +70,11 @@ type BedrockPortalOptions = {
    * })
    */
   joinability: Joinability,
+
+  /**
+   * The WebRTC network ID to use for the session.
+   */
+  webRTCNetworkId: bigint,
 
   /**
    * The world config to use for the session. Changes the session card which is displayed in the Minecraft client
@@ -135,6 +148,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
       ip: '',
       port: 19132,
       joinability: Joinability.FriendsOfFriends,
+      webRTCNetworkId: getRandomUint64(),
       ...options,
       world: {
         hostName: 'Bedrock Portal v0.6.0',
@@ -175,6 +189,48 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     await this.host.connect()
 
     this.session.name = uuidV4()
+
+    const server = new Server({
+      version: '1.21.20', // The server version
+      compressionAlgorithm: 'none',
+    })
+
+    server.listenNethernet(this.authflow, this.options.webRTCNetworkId)
+
+    server.on('connect', (client: any) => {
+
+      client.on('join', () => { // The client has joined the server.
+
+        console.log(`Client ${client.id} has joined the server.`)
+
+        client.write('resource_packs_info', {
+          must_accept: false,
+          has_scripts: false,
+          behaviour_packs: [],
+          texture_packs: [],
+          resource_pack_links: [],
+        })
+
+        client.write('resource_pack_stack', {
+          must_accept: false,
+          behavior_packs: [],
+          resource_packs: [],
+          game_version: '',
+          experiments: [],
+          experiments_previously_used: false,
+        })
+
+        client.once('resource_pack_client_response', async (rp: any) => {
+          client.write('start_game', start_game)
+        })
+
+        // TODO: Tie this to an event
+        setTimeout(() => {
+          client.write('transfer', { server_address: this.options.ip, port: this.options.port })
+        }, 6000)
+
+      })
+    })
 
     const session = await this.createAndPublishSession()
 
@@ -325,20 +381,23 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
           MaxMemberCount: Number(this.options.world.maxMemberCount),
           Joinability: joinability.joinability,
           ownerId: this.host.profile.xuid,
-          rakNetGUID: genRaknetGUID(),
+          rakNetGUID: '',
           worldType: 'Survival',
           protocol: SessionConfig.MiencraftProtocolVersion,
           BroadcastSetting: joinability.broadcastSetting,
           OnlineCrossPlatformGame: true,
           CrossPlayDisabled: false,
           TitleId: 0,
-          TransportLayer: 0,
+          TransportLayer: 2,
+          LanGame: true,
+          WebRTCNetworkId: this.options.webRTCNetworkId,
           SupportedConnections: [
             {
-              ConnectionType: 6,
-              HostIpAddress: this.options.ip,
-              HostPort: Number(this.options.port),
-              RakNetGUID: '',
+              ConnectionType: 3,
+              HostIpAddress: '',
+              HostPort: 0,
+              WebRTCNetworkId: this.options.webRTCNetworkId,
+              NetherNetId: this.options.webRTCNetworkId,
             },
           ],
         },
