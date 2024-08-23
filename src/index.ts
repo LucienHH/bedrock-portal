@@ -153,7 +153,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
       world: {
         hostName: 'Bedrock Portal v0.6.0',
         name: 'By LucienHH',
-        version: '0.6.0',
+        version: '0.7.1',
         memberCount: 0,
         maxMemberCount: 10,
         ...options.world,
