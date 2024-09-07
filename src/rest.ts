@@ -76,8 +76,8 @@ export default class Rest {
 
     return axios({
       ...payload,
-      transformResponse: [data => parse(data)],
-      transformRequest: [data => stringify(data)],
+      transformResponse: [data => data ? parse(data) : undefined],
+      transformRequest: [data => data ? stringify(data) : undefined],
     }).then(e => e.data)
   }
 
