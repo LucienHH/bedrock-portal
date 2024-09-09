@@ -21,8 +21,7 @@ import RedirectFromRealm from './modules/redirectFromRealm'
 import MultipleAccounts from './modules/multipleAccounts'
 import { start_game } from './common/start_game'
 
-// @ts-expect-error - index.d.ts isn't updated
-import { Server } from '@lucienhh/bedrock-protocol'
+import { Server } from 'bedrock-portal-nethernet'
 
 const debug = debugFn('bedrock-portal')
 
@@ -32,7 +31,7 @@ const getRandomUint64 = () => {
   const low = Math.floor(Math.random() * 0xFFFFFFFF)
 
   // Combine them to create a 64-bit unsigned integer
-  const result = (BigInt(high) << 32n) | BigInt(low)
+  const result = (BigInt(high) << BigInt(32)) | BigInt(low)
   return result
 }
 
@@ -195,39 +194,19 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
       compressionAlgorithm: 'none',
     })
 
-    server.listenNethernet(this.authflow, this.options.webRTCNetworkId)
+    server.listen(this.authflow, this.options.webRTCNetworkId)
 
-    server.on('connect', (client: any) => {
+    server.on('connect', client => {
 
       client.on('join', () => { // The client has joined the server.
 
         console.log(`Client ${client.id} has joined the server.`)
 
-        client.write('resource_packs_info', {
-          must_accept: false,
-          has_scripts: false,
-          behaviour_packs: [],
-          texture_packs: [],
-          resource_pack_links: [],
-        })
+        client.write('start_game', start_game)
 
-        client.write('resource_pack_stack', {
-          must_accept: false,
-          behavior_packs: [],
-          resource_packs: [],
-          game_version: '',
-          experiments: [],
-          experiments_previously_used: false,
-        })
-
-        client.once('resource_pack_client_response', async (rp: any) => {
-          client.write('start_game', start_game)
-        })
-
-        // TODO: Tie this to an event
-        setTimeout(() => {
+        client.once('set_player_game_type', () => {
           client.write('transfer', { server_address: this.options.ip, port: this.options.port })
-        }, 6000)
+        })
 
       })
     })
@@ -347,7 +326,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
     await this.updateSession(this.createSessionBody())
 
-    debug(`Created session, name: ${this.session.name}`)
+    debug(`Created session, name: ${this.session.name}, ID: ${this.options.webRTCNetworkId}`)
 
     await this.host.rest.setActivity(this.session.name)
 
@@ -355,7 +334,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
     await this.updateSession({ properties: session.properties })
 
-    debug(`Published session, name: ${this.session.name}`)
+    debug(`Published session, name: ${this.session.name}, ID: ${this.options.webRTCNetworkId}`)
 
     return session
   }

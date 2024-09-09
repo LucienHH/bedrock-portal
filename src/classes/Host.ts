@@ -42,7 +42,6 @@ export default class Host {
 
     this.profile = await this.rest.getProfile(auth.userXUID)
 
-    // @ts-expect-error - XboxRTA isnt using the #playfab branch
     this.rta = new XboxRTA(this.authflow)
 
     await this.rta.connect()

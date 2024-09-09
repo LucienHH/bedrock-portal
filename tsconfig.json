@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"target": "ES2020",
+		"target": "ES2023",
     "moduleResolution": "Node",
     "module": "CommonJS",
 		"outDir": "./dist",
@@ -12,7 +12,7 @@
 		"noUnusedLocals": true,
 		"noImplicitReturns": true,
 		"noUnusedParameters": false,
-		"skipLibCheck": false,
+		"skipLibCheck": true,
 		"esModuleInterop": true,
 		"declaration": true
 	},

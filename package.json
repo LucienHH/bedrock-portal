@@ -1,6 +1,6 @@
 {
   "name": "bedrock-portal",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Creates a joinable session in Minecraft Bedrock Edition that can route players to their a specified host",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,8 +21,8 @@
   },
   "homepage": "https://github.com/LucienHH/bedrock-portal#readme",
   "dependencies": {
-    "@lucienhh/bedrock-protocol": "^3.39.0",
     "axios": "^1.0.0",
+    "bedrock-portal-nethernet": "^1.0.3",
     "debug": "^4.3.4",
     "json-bigint": "^1.0.0",
     "prismarine-auth": "github:LucienHH/prismarine-auth#playfab",
