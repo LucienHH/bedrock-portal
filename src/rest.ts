@@ -5,9 +5,10 @@ import { parse, stringify } from 'json-bigint'
 
 import { SessionConfig } from './common/constants'
 
-import { RESTPeoplehubResponse } from './types/peoplehub'
+import { RESTPeoplehubGetFriendRequestResponse, RESTPeoplehubResponse } from './types/peoplehub'
 import { RESTXblmessageInboxResponse } from './types/xblmessaging'
 import { SessionRequest, RESTSessionResponse, SessionHandlePayload } from './types/sessiondirectory'
+import { RESTSocialPostBulkFriendRequestResponse } from './types/social'
 import { isXuid } from './common/util'
 
 
@@ -181,6 +182,21 @@ export default class Rest {
   async getXboxFollowers() {
     const response: RESTPeoplehubResponse = await this.get('https://peoplehub.xboxlive.com/users/me/people/followers/decoration/detail,preferredColor,follower', { contractVersion: '5' })
     return response.people
+  }
+
+  async getFriendRequestsReceived() {
+    const response: RESTPeoplehubGetFriendRequestResponse = await this.get('https://peoplehub.xboxlive.com/users/me/people/friendrequests(received)/decoration/detail,preferredColor,follower', { contractVersion: '7' })
+    return response.people
+  }
+
+  async acceptFriendRequests(xuids: string[]) {
+    const response: RESTSocialPostBulkFriendRequestResponse = await this.post('https://social.xboxlive.com/bulk/users/me/people/friends/v2?method=add', { data: { xuids }, contractVersion: '3' })
+    return response
+  }
+
+  async declineFriendRequests(xuids: string[]) {
+    const response: RESTSocialPostBulkFriendRequestResponse = await this.post('https://social.xboxlive.com/bulk/users/me/people/friends/v2?method=remove', { data: { xuids }, contractVersion: '3' })
+    return response
   }
 
   async addXboxFriend(xuid: string) {

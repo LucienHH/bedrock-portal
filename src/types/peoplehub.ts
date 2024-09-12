@@ -21,8 +21,8 @@ export interface Person {
   modernGamertag: string;
   modernGamertagSuffix: string;
   uniqueModernGamertag: string;
-  xboxOneRep: XboxOneRep;
-  presenceState: PresenceState;
+  xboxOneRep: string;
+  presenceState: string;
   presenceText: string;
   presenceDevices: null;
   isBroadcasting: boolean;
@@ -38,7 +38,7 @@ export interface Person {
   recentPlayer: null;
   follower: Follower;
   preferredColor: PreferredColor;
-  presenceDetails: PresenceDetail[];
+  presenceDetails: null;
   titlePresence: null;
   titleSummaries: null;
   presenceTitleIds: null;
@@ -97,20 +97,6 @@ export interface PreferredColor {
   tertiaryColor: string;
 }
 
-export interface PresenceDetail {
-  IsBroadcasting: boolean;
-  Device: Device;
-  DeviceSubType: null;
-  GameplayType: null;
-  PresenceText: string;
-  State: State;
-  TitleId: string;
-  TitleType: null;
-  IsPrimary: boolean;
-  IsGame: boolean;
-  RichPresenceText: null | string;
-}
-
 export enum Device {
   Android = 'Android',
   IOS = 'iOS',
@@ -121,16 +107,87 @@ export enum Device {
   XboxOne = 'XboxOne',
 }
 
-export enum State {
-  Active = 'Active',
-  LastSeen = 'LastSeen',
+export interface RESTPeoplehubGetFriendRequestResponse {
+  people: FriendRequestPerson[];
+  recommendationSummary: null;
+  friendFinderState: null;
+  accountLinkDetails: null;
+  friendRequestSummary: null;
 }
 
-export enum PresenceState {
-  Offline = 'Offline',
-  Online = 'Online',
+export interface FriendRequestPerson {
+  detail: FriendRequestPersonDetail;
+  follower: Follower;
+  recommendation: null;
+  isFriend: boolean;
+  friendedDateTimeUtc: null;
+  isFriendRequestReceived: boolean;
+  isFriendRequestSent: boolean;
+  xuid: string;
+  appXuid: null;
+  isFavorite: boolean;
+  isFollowingCaller: boolean;
+  isFollowedByCaller: boolean;
+  isIdentityShared: boolean;
+  addedDateTimeUtc: string;
+  displayName: string;
+  realName: string;
+  displayPicRaw: string;
+  showUserAsAvatar: string;
+  gamertag: string;
+  gamerScore: string;
+  modernGamertag: string;
+  modernGamertagSuffix: string;
+  uniqueModernGamertag: string;
+  xboxOneRep: string;
+  presenceState: string;
+  presenceText: string;
+  presenceDevices: null;
+  isBroadcasting: boolean;
+  isCloaked: null;
+  isQuarantined: boolean;
+  isXbox360Gamerpic: boolean;
+  lastSeenDateTimeUtc: string;
+  suggestion: null;
+  search: null;
+  titleHistory: null;
+  multiplayerSummary: null;
+  recentPlayer: null;
+  preferredColor: PreferredColor;
+  presenceDetails: null;
+  titlePresence: null;
+  titleSummaries: null;
+  presenceTitleIds: null;
+  communityManagerTitles: null;
+  socialManager: null;
+  broadcast: null;
+  avatar: null;
+  linkedAccounts: LinkedAccount[];
+  colorTheme: string;
+  preferredFlag: string;
+  preferredPlatforms: string[];
 }
 
-export enum XboxOneRep {
-  GoodPlayer = 'GoodPlayer',
+export interface FriendRequestPersonDetail {
+  canBeFriended: boolean;
+  canBeFollowed: boolean;
+  isFriend: boolean;
+  friendCount: number;
+  isFriendRequestReceived: boolean;
+  isFriendRequestSent: boolean;
+  isFriendListShared: boolean;
+  isFollowingCaller: boolean;
+  isFollowedByCaller: boolean;
+  isFavorite: boolean;
+  accountTier: string;
+  bio: string;
+  isVerified: boolean;
+  location: string;
+  tenure: string;
+  watermarks: string[];
+  blocked: boolean;
+  mute: boolean;
+  followerCount: number;
+  followingCount: number;
+  hasGamePass: boolean;
 }

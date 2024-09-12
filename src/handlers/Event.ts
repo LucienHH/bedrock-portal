@@ -9,6 +9,8 @@ const debug = debugFn('bedrock-portal')
 
 export default async (portal: BedrockPortal, event: EventResponse) => {
 
+  if (!(event.data as any).ncid) return
+
   portal.emit('rtaEvent', event)
 
   const session = await portal.getSession()

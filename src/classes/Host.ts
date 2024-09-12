@@ -56,11 +56,12 @@ export default class Host {
 
   private async onSubscribe(event: EventResponse) {
 
-    debug('Received RTA subscribe event', event)
-
-    const connectionId = (event.data as any).ConnectionId
+    const connectionId = (event.data as any)?.ConnectionId
 
     if (connectionId && typeof connectionId === 'string') {
+
+      debug('Received RTA subscribe event', event)
+
       try {
         this.connectionId = connectionId
 
