@@ -125,8 +125,9 @@ export default class Rest {
     return response
   }
 
-  async updateMemberCount(sessionName: string, count: number) {
-    await this.updateSession(sessionName, { properties: { custom: { MemberCount: Number(count) } } })
+  async updateMemberCount(sessionName: string, count: number, maxCount?: number) {
+    const payload = maxCount ? { MemberCount: count, MaxMemberCount: maxCount } : { MemberCount: count }
+    await this.updateSession(sessionName, { properties: { custom: payload } })
   }
 
   async addConnection(sessionName: string, xuid: string, connectionId: string, subscriptionId: string) {

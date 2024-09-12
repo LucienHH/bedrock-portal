@@ -21,6 +21,7 @@ import InviteOnMessage from './modules/inviteOnMessage'
 import RedirectFromRealm from './modules/redirectFromRealm'
 import MultipleAccounts from './modules/multipleAccounts'
 import AutoFriendAccept from './modules/autoFriendAccept'
+import UpdateMemberCount from './modules/updateMemberCount'
 
 import { start_game } from './common/start_game'
 import { getRandomUint64, isXuid } from './common/util'
@@ -115,6 +116,7 @@ interface PortalEvents {
   messageRecieved: (message: Message) => void
   friendRemoved: (player: Player) => void
   friendAdded: (player: Player) => void
+  memberCountUpdate: (data: { online: number, max: number, cycle: number }) => void
 }
 
 export class BedrockPortal extends TypedEmitter<PortalEvents> {
@@ -271,9 +273,10 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
   /**
    * Updates the current member count which is displayed in the Minecraft client.
    * @param count The new member count.
+   * @param maxCount The new max member count.
    */
-  async updateMemberCount(count: number) {
-    await this.host.rest.updateMemberCount(this.session.name, count)
+  async updateMemberCount(count: number, maxCount?: number) {
+    await this.host.rest.updateMemberCount(this.session.name, count, maxCount)
   }
 
   /**
@@ -407,6 +410,7 @@ const Modules = {
   RedirectFromRealm,
   MultipleAccounts,
   AutoFriendAccept,
+  UpdateMemberCount,
 }
 
 export { Modules }

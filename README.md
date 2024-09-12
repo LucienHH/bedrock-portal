@@ -133,6 +133,27 @@ portal.use(Modules.RedirectFromRealm, {
 }
 ```
 
+### UpdateMemberCount
+
+> Requires [bedrock-protocol](https://github.com/PrismarineJS/bedrock-protocol) to be installed. `npm install bedrock-protocol`
+
+Periodically updates the member count of the session. `#.use(Modules.UpdateMemberCount, options);`
+
+Options:
+- **updateInterval**: number - How often to update the member count (default: 60000ms)
+- **updateMaxMemberCount**: boolean - Whether to update the max member count (default: true)
+
+```js
+const { BedrockPortal, Modules } = require('bedrock-portal');
+
+const portal = new BedrockPortal(auth, { ... })
+
+portal.use(Modules.UpdateMemberCount, {
+  updateInterval: 60000,
+  updateMaxMemberCount: false,
+});
+```
+
 ### AutoFriendAdd
 
 Automatically adds the account's followers as friends and invites them to the game. `#.use(Modules.autoFriendAdd);`
@@ -275,6 +296,9 @@ Emitted when a player is removed as a friend. This event is only emitted when th
 
 ### portal.on('messageRecieved', (message) => void)
 Emitted when a message is recieved from a player. This event is only emitted when the `inviteOnMessage` module is enabled.
+
+### portal.on('memberCountUpdate', (memberCount) => void)
+Emitted when the member count of the session is updated. This event is only emitted when the `updateMemberCount` module is enabled.
 
 ## Debugging
 
