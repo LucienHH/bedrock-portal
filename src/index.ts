@@ -266,14 +266,15 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
   async invitePlayer(identifier: string) {
     debug(`Inviting player, identifier: ${identifier}`)
 
-    const profile = await this.host.rest.getProfile(identifier)
-      .catch(() => { throw new Error(`Failed to get profile for identifier: ${identifier}`) })
+    if (!isXuid(identifier)) {
+      const profile = await this.host.rest.getProfile(identifier)
+        .catch(() => { throw new Error(`Failed to get profile for identifier: ${identifier}`) })
+      identifier = profile.xuid
+    }
 
-    debug(`Inviting player, Got profile, xuid: ${profile.xuid}`)
+    await this.host.rest.sendInvite(this.session.name, identifier)
 
-    await this.host.rest.sendInvite(this.session.name, profile.xuid)
-
-    debug(`Invited player, xuid: ${profile.xuid}`)
+    debug(`Invited player, xuid: ${identifier}`)
   }
 
   /**
