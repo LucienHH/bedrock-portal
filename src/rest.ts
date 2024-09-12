@@ -8,6 +8,7 @@ import { SessionConfig } from './common/constants'
 import { RESTPeoplehubResponse } from './types/peoplehub'
 import { RESTXblmessageInboxResponse } from './types/xblmessaging'
 import { SessionRequest, RESTSessionResponse, SessionHandlePayload } from './types/sessiondirectory'
+import { isXuid } from './common/util'
 
 
 type RequestHeaders = {
@@ -157,9 +158,7 @@ export default class Rest {
   async getProfile(input: string) {
     let xuid = input
 
-    const isXuid = /^\d{16}$/.test(input)
-
-    if (!isXuid) {
+    if (!isXuid(input)) {
       const target = input === 'me' ? 'me' : `gt(${encodeURIComponent(input)})`
       const response = await this.get(`https://profile.xboxlive.com/users/${target}/settings`, { contractVersion: '2' })
       xuid = response.profileUsers[0]!.id

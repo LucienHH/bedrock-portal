@@ -6,6 +6,7 @@ import { v4 as uuidV4 } from 'uuid'
 import { EventResponse } from 'xbox-rta'
 import { Authflow } from 'prismarine-auth'
 import { TypedEmitter } from 'tiny-typed-emitter'
+import { Server } from 'bedrock-portal-nethernet'
 
 import Host from './classes/Host'
 import Player from './classes/Player'
@@ -19,22 +20,11 @@ import AutoFriendAdd from './modules/autoFriendAdd'
 import InviteOnMessage from './modules/inviteOnMessage'
 import RedirectFromRealm from './modules/redirectFromRealm'
 import MultipleAccounts from './modules/multipleAccounts'
-import { start_game } from './common/start_game'
 
-import { Server } from 'bedrock-portal-nethernet'
+import { start_game } from './common/start_game'
+import { getRandomUint64, isXuid } from './common/util'
 
 const debug = debugFn('bedrock-portal')
-
-const getRandomUint64 = () => {
-  // Generate two 32-bit random integers
-  const high = Math.floor(Math.random() * 0xFFFFFFFF)
-  const low = Math.floor(Math.random() * 0xFFFFFFFF)
-
-  // Combine them to create a 64-bit unsigned integer
-  const result = (BigInt(high) << BigInt(32)) | BigInt(low)
-  return result
-}
-
 
 type BedrockPortalOptions = {
 
