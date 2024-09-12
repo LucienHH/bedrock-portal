@@ -236,9 +236,6 @@ Emitted when a player leaves the session.
 ### portal.on('friendAdded', (player) => void)
 Emitted when a player is added as a friend. This event is only emitted when the `autoFriendAdd` module is enabled.
 
-### portal.on('friendRemoved', (player) => void)
-Emitted when a player is removed as a friend. This event is only emitted when the `autoFriendAdd` module is enabled.
-
 ### portal.on('messageRecieved', (message) => void)
 Emitted when a message is recieved from a player. This event is only emitted when the `inviteOnMessage` module is enabled.
 
