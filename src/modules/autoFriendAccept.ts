@@ -12,10 +12,10 @@ type EventResponseData = {
   Count: number,
 }
 
-export default class AutoFriendAdd extends Module {
+export default class AutoFriendAccept extends Module {
 
   constructor() {
-    super('autoFriendAdd', 'Automatically accept friend requests')
+    super('autoFriendAccept', 'Automatically accept friend requests')
 
     this.options = {
       inviteOnAdd: false,
