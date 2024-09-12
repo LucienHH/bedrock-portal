@@ -16,10 +16,11 @@ import { SessionConfig, Joinability, JoinabilityConfig } from './common/constant
 
 import eventHandler from './handlers/Event'
 
-import AutoFriendAdd from './modules/autoFriendAdd'
+import AutoFriendAdd from './modules/autoFriendAccept'
 import InviteOnMessage from './modules/inviteOnMessage'
 import RedirectFromRealm from './modules/redirectFromRealm'
 import MultipleAccounts from './modules/multipleAccounts'
+import AutoFriendAccept from './modules/autoFriendAccept'
 
 import { start_game } from './common/start_game'
 import { getRandomUint64, isXuid } from './common/util'
@@ -405,6 +406,7 @@ const Modules = {
   InviteOnMessage,
   RedirectFromRealm,
   MultipleAccounts,
+  AutoFriendAccept,
 }
 
 export { Modules }

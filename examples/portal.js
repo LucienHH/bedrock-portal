@@ -35,14 +35,24 @@ const main = async () => {
     },
   })
 
-  // Automatically accepts friend requests from players
+  // Automatically checks for friends to add and removes friends that don't meet the condition
   portal.use(Modules.AutoFriendAdd, {
 
     // Whether to invite players when they are added as a friend (optional - defaults to false)
     inviteOnAdd: true,
 
-    // Only add friends that have elite in their name
-    conditionToMeet: (player) => player.gamertag.includes('elite'),
+    // Only add friends that are online and remove friends that are offline
+    conditionToMeet: (player) => player.presenceState === 'Online',
+
+    // How often to check for friends to add/remove (optional - defaults to 30000ms)
+    checkInterval: 30000,
+
+    // How long to wait between adding friends (optional - defaults to 2000ms)
+    addInterval: 2000,
+
+    // How long to wait between removing friends (optional - defaults to 2000ms)
+    removeInterval: 2000,
+
   })
 
   // Automatically invites players when they send a message with the specified command

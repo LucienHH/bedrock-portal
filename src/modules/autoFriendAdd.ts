@@ -1,80 +1,109 @@
 import type { BedrockPortal } from '../index'
 
+import { setTimeout } from 'timers/promises'
+
 import Module from '../classes/Module'
 import Player from '../classes/Player'
 import Host from '../classes/Host'
 
 import MultipleAccounts from './multipleAccounts'
 
-type EventResponseData = {
-  NotificationType: string,
-  Xuid: string,
-  Count: number,
-}
-
 export default class AutoFriendAdd extends Module {
 
+  public interval: NodeJS.Timeout | null = null
+
   constructor() {
-    super('autoFriendAdd', 'Automatically accept friend requests')
+    super('autoFriendAdd', 'Automatically adds followers as friends')
 
     this.options = {
       inviteOnAdd: false,
       conditionToMeet: () => true,
+      checkInterval: 30000,
+      addInterval: 2000,
+      removeInterval: 2000,
     }
   }
 
   async run(portal: BedrockPortal) {
 
     const addXboxFriend = async (host: Host) => {
+      this.debug('Checking for followers to add')
 
-      host.rta?.on('event', async (event) => {
+      const followers = await host.rest.getXboxFollowers()
+        .catch(() => [])
 
-        if ((event.data as EventResponseData).NotificationType !== 'IncomingFriendRequestCountChanged') return
+      this.debug(`Found ${followers.length} follower(s)`)
 
-        this.debug('Received Friend RTA event', event)
+      const needsAdding = followers.filter(res => !res.isFollowedByCaller && this.options.conditionToMeet(res))
 
-        const requests = await host.rest.getFriendRequestsReceived()
-          .then(res => res.filter(this.options.conditionToMeet))
+      this.debug(`Adding ${needsAdding.length} account(s) [${needsAdding.map(res=> res.gamertag).join(', ')}]`)
 
-        this.debug(`Received ${requests.length} friend request(s)`)
+      for (const account of needsAdding) {
+        await host.rest.addXboxFriend(account.xuid).catch(() => {
+          throw Error(`Failed to add ${account.gamertag}`)
+        })
 
-        if (!requests.length) return
-
-        const accept = await host.rest.acceptFriendRequests(requests.map(req => req.xuid))
-
-        this.debug(`Accepted ${accept.updatedPeople.length} friend request(s)`)
-
-        for (const person of requests.filter(req => accept.updatedPeople.includes(req.xuid))) {
-          portal.emit('friendAdded', new Player(person, null))
-
-          this.debug(`Accepted ${person.gamertag}`)
-
-          if (this.options.inviteOnAdd) {
-            await portal.invitePlayer(person.xuid).catch(error => this.debug(`Error: Failed to invite ${person.gamertag}`, error))
-          }
+        if (this.options.inviteOnAdd) {
+          await portal.invitePlayer(account.xuid).catch(() => {
+            throw Error(`Failed to invite ${account.gamertag}`)
+          })
         }
 
-      })
+        portal.emit('friendAdded', new Player(account, null))
 
-      await host.rta?.subscribe(`https://social.xboxlive.com/users/xuid(${host.profile?.xuid})/friends`)
+        this.debug(`Added & invited ${account.gamertag}`)
 
-    }
-
-    const multipleAccounts = portal.modules.get('multipleAccounts')
-
-    if (multipleAccounts && multipleAccounts instanceof MultipleAccounts) {
-      for (const account of multipleAccounts.peers.values()) {
-        addXboxFriend(account)
-          .catch(error => this.debug(`Error: ${error.message}`, error))
+        await setTimeout(this.options.addInterval)
       }
+
+      this.debug('Checking for friends to remove')
+
+      const friends = await host.rest.getXboxFriends()
+        .catch(() => [])
+
+      this.debug(`Found ${friends.length} friend(s)`)
+
+      const needsRemoving = friends.filter(res => !res.isFollowingCaller || !this.options.conditionToMeet(res))
+
+      this.debug(`Removing ${needsRemoving.length} account(s) [${needsRemoving.map(res => res.gamertag).join(', ')}]`)
+
+      for (const account of needsRemoving) {
+        await host.rest.removeXboxFriend(account.xuid).catch(() => {
+          throw Error(`Failed to remove ${account.gamertag}`)
+        })
+
+        portal.emit('friendRemoved', new Player(account, null))
+
+        this.debug(`Removed ${account.gamertag}`)
+
+        await setTimeout(this.options.removeInterval)
+      }
+
     }
 
-    addXboxFriend(portal.host)
-      .catch(error => this.debug(`Error: ${error.message}`, error))
+    this.interval = setInterval(() => {
+
+      const multipleAccounts = portal.modules.get('multipleAccounts')
+
+      if (multipleAccounts && multipleAccounts instanceof MultipleAccounts) {
+        for (const account of multipleAccounts.peers.values()) {
+          addXboxFriend(account)
+            .catch(error => this.debug(`Error: ${error.message}`, error))
+        }
+      }
+
+      addXboxFriend(portal.host)
+        .catch(error => this.debug(`Error: ${error.message}`, error))
+
+    }, this.options.checkInterval)
 
   }
 
   async stop() {
     super.stop()
+
+    if (this.interval) {
+      clearInterval(this.interval)
+    }
   }
 }

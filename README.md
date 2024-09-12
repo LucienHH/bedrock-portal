@@ -135,11 +135,14 @@ portal.use(Modules.RedirectFromRealm, {
 
 ### AutoFriendAdd
 
-Automatically accepts friend requests sent to the account. `#.use(Modules.autoFriendAdd);`
+Automatically adds the account's followers as friends and invites them to the game. `#.use(Modules.autoFriendAdd);`
 
 Options:
-- **inviteOnAdd**: boolean - Automatically invites added friends to the game (default: false)
-- **conditionToMeet**: (player: Player) => boolean - If the function returns true then the request will be accepted (default: () => true)
+- **inviteOnAdd**: boolean - Automatically invites recently added friends to the game (default: false)
+- **conditionToMeet**: (player: RawPlayer) => boolean - A function that returns a boolean. If the function returns true, followers will be added as a friend and the friends that don't will be removed (default: () => true)
+- **checkInterval**: number - How often to check for friends to add/remove (default: 30000ms)
+- **addInterval**: number - How long to wait between adding friends (default: 2000ms)
+- **removeInterval**: number - How long to wait between removing friends (default: 2000ms)
 
 ```js
 const { BedrockPortal, Modules } = require('bedrock-portal');
@@ -151,6 +154,37 @@ portal.use(Modules.AutoFriendAdd);
 // or
 
 portal.use(Modules.AutoFriendAdd, {
+  // When a friend is added, automatically invite them to the game
+  inviteOnAdd: true,
+  // Only add friends that are online and remove friends that are offline
+  conditionToMeet: (player) => player.presenceState === 'Online',
+  // How often to check for friends to add/remove (optional - defaults to 30000ms)
+  checkInterval: 30000,
+  // How long to wait between adding friends (optional - defaults to 2000ms)
+  addInterval: 2000,
+  // How long to wait between removing friends (optional - defaults to 2000ms)
+  removeInterval: 2000,
+});
+```
+
+### AutoFriendAccept
+
+Automatically accepts friend requests sent to the account. `#.use(Modules.autoFriendAdd);`
+
+Options:
+- **inviteOnAdd**: boolean - Automatically invites added friends to the game (default: false)
+- **conditionToMeet**: (player: Player) => boolean - If the function returns true then the request will be accepted (default: () => true)
+
+```js
+const { BedrockPortal, Modules } = require('bedrock-portal');
+
+const portal = new BedrockPortal(auth, { ... })
+
+portal.use(Modules.AutoFriendAccept);
+
+// or
+
+portal.use(Modules.AutoFriendAccept, {
   // When a friend is added invite them to the game
   inviteOnAdd: true,
   // Only accept friends that have 'elite' in their gamertag
@@ -235,6 +269,9 @@ Emitted when a player leaves the session.
 
 ### portal.on('friendAdded', (player) => void)
 Emitted when a player is added as a friend. This event is only emitted when the `autoFriendAdd` module is enabled.
+
+### portal.on('friendRemoved', (player) => void)
+Emitted when a player is removed as a friend. This event is only emitted when the `autoFriendAdd` module is enabled.
 
 ### portal.on('messageRecieved', (message) => void)
 Emitted when a message is recieved from a player. This event is only emitted when the `inviteOnMessage` module is enabled.
