@@ -15,7 +15,7 @@ jobs:
       with:
         node-version: 14.0.0
     - name: Install dependencies
-      run: npm install --include=dev
+      run: git config --global url."git@github.com:".insteadOf git://github.com/ && npm install --include=dev
     - name: Build
       run: npm run build
     - id: publish
