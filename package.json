@@ -22,13 +22,13 @@
   "homepage": "https://github.com/LucienHH/bedrock-portal#readme",
   "dependencies": {
     "axios": "^1.0.0",
-    "bedrock-portal-nethernet": "^1.0.3",
+    "bedrock-portal-nethernet": "^1.0.6",
     "debug": "^4.3.4",
     "json-bigint": "^1.0.0",
     "prismarine-auth": "github:LucienHH/prismarine-auth#playfab",
     "tiny-typed-emitter": "^2.1.0",
     "uuid": "^9.0.0",
-    "xbox-rta": "^2.0.1"
+    "xbox-rta": "^2.1.0"
   },
   "devDependencies": {
     "@types/debug": "^4.1.12",
