@@ -40,7 +40,6 @@ export default class MultipleAccounts extends Module {
       await peer.connect()
 
       if (!peer.profile || !peer.connectionId) {
-        // @ts-expect-error - username isn't defined on Authflow
         this.debug(`Failed to connect to ${account.username}`)
         continue
       }
