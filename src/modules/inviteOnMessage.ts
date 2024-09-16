@@ -45,7 +45,13 @@ export default class IniteOnMessage extends Module {
       if (newMessages.length === 0) return
 
       for (const message of newMessages) {
-        portal.emit('messageRecieved', message.lastMessage)
+
+        if (portal.listenerCount('messageRecieved') > 0) {
+          console.warn('[Deprecation Warning]: The event \'messageRecieved\' is deprecated and will be removed in a future release. Please use \'messageReceived\' instead.')
+          portal.emit('messageRecieved', message.lastMessage)
+        }
+
+        portal.emit('messageReceived', message.lastMessage)
 
         const senderXuid = message.lastMessage.sender
 

@@ -114,6 +114,7 @@ interface PortalEvents {
   playerJoin: (player: Player) => void
   playerLeave: (player: Player) => void
   messageRecieved: (message: Message) => void
+  messageReceived: (message: Message) => void
   friendRemoved: (player: Player) => void
   friendAdded: (player: Player) => void
   memberCountUpdate: (data: { online: number, max: number, cycle: number }) => void
