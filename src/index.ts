@@ -16,7 +16,7 @@ import { SessionConfig, Joinability, JoinabilityConfig } from './common/constant
 
 import eventHandler from './handlers/Event'
 
-import AutoFriendAdd from './modules/autoFriendAccept'
+import AutoFriendAdd from './modules/autoFriendAdd'
 import InviteOnMessage from './modules/inviteOnMessage'
 import RedirectFromRealm from './modules/redirectFromRealm'
 import MultipleAccounts from './modules/multipleAccounts'
