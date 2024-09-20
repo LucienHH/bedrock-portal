@@ -184,7 +184,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     this.session.name = uuidV4()
 
     const server = new Server({
-      version: '1.21.20', // The server version
+      version: '1.21.30', // The server version
       compressionAlgorithm: 'none',
     })
 
