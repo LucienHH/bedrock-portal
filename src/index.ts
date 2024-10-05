@@ -22,6 +22,7 @@ import RedirectFromRealm from './modules/redirectFromRealm'
 import MultipleAccounts from './modules/multipleAccounts'
 import AutoFriendAccept from './modules/autoFriendAccept'
 import UpdateMemberCount from './modules/updateMemberCount'
+import ServerFromList from './modules/serverFormList'
 
 import { start_game } from './common/start_game'
 import { getRandomUint64, isXuid } from './common/util'
@@ -134,11 +135,13 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   public modules: Map<string, Module> = new Map()
 
-  constructor(authflow: Authflow, options: Partial<BedrockPortalOptions>) {
+  public server = new Server()
+
+  constructor(authflow: Authflow, options: Partial<BedrockPortalOptions> = {}) {
     super()
 
     this.options = {
-      ip: '',
+      ip: 'bedrock.opblocks.com',
       port: 19132,
       joinability: Joinability.FriendsOfFriends,
       webRTCNetworkId: getRandomUint64(),
@@ -167,8 +170,6 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
   }
 
   validateOptions(options: BedrockPortalOptions) {
-    if (!options.ip) throw new Error('No IP provided')
-    if (!options.port) throw new Error('No port provided')
     if (!Object.values(Joinability).includes(options.joinability)) throw new Error('Invalid joinability - Expected one of ' + Object.keys(Joinability).join(', '))
   }
 
@@ -183,31 +184,16 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
     this.session.name = uuidV4()
 
-    const server = new Server({
-      version: '1.21.30', // The server version
-      compressionAlgorithm: 'none',
-    })
+    await this.server.listen(this.authflow, this.options.webRTCNetworkId)
 
-    server.listen(this.authflow, this.options.webRTCNetworkId)
-
-    server.on('connect', client => {
-
-      client.on('join', () => { // The client has joined the server.
-
-        console.log(`Client ${client.id} has joined the server.`)
-
-        client.write('start_game', start_game)
-
-        client.once('set_player_game_type', () => {
-          client.write('transfer', { server_address: this.options.ip, port: this.options.port })
-        })
-
-      })
-    })
+    this.server.on('connect', (client) => this.onServerConnection(client))
 
     const session = await this.createAndPublishSession()
 
-    this.host.rta!.on('event', (event) => eventHandler(this, event))
+    this.host.rta!.on('event', (event) => {
+      eventHandler(this, event)
+        .catch(e => debug('Failed to handle event', e))
+    })
 
     if (this.modules) {
       for (const mod of this.modules.values()) {
@@ -318,6 +304,19 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     this.modules.set(constructed.name, constructed)
   }
 
+  onServerConnection = (client: any) => {
+
+    client.once('join', () => {
+
+      client.write('start_game', start_game)
+
+      client.once('set_player_game_type', () => {
+        client.write('transfer', { server_address: this.options.ip, port: this.options.port })
+      })
+    })
+
+  }
+
   private async createAndPublishSession() {
 
     await this.updateSession(this.createSessionBody())
@@ -412,6 +411,7 @@ const Modules = {
   MultipleAccounts,
   AutoFriendAccept,
   UpdateMemberCount,
+  ServerFromList,
 }
 
 export { Modules }

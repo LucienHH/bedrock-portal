@@ -59,6 +59,46 @@ main();
 
 Modules are used to extend the functionality of the BedrockPortal class.
 
+### ServerFormList
+
+Instead of redirecting players to a server, the portal will display a list of servers to join from a form. `#.use(Modules.serverFormList, options);`
+
+Options:
+- **form**: Form - The form to display to the player. At the moment only simple forms are supported. (required)
+- **timeout**: number - The time in milliseconds before the player is kicked from the session if they don't select a server (default: 60000ms)
+- **timeoutMessage**: string - The message to display to the player when they are kicked from the session (default: 'You took too long to select a server!')
+
+The form will be sent to the player when they join the server and every 5 seconds after they clost the form.
+
+```js
+const { BedrockPortal, Joinability, Modules } = require('bedrock-portal')
+const { Authflow, Titles } = require('prismarine-auth')
+
+const main = async () => {
+  const auth = new Authflow('example', './', { authTitle: Titles.XboxAppIOS, deviceType: 'iOS', flow: 'sisu' })
+
+  const portal = new BedrockPortal(auth)
+
+  portal.use(Modules.ServerFromList, {
+    form: {
+      title: '§l§aServer Form List',
+      content: '§7Please select a server to join',
+      buttons: [
+        { text: '§8Anarchy Server\n§7Click Here§!', ip: 'bedrock.opblocks.com', port: 19132 },
+        { text: '§7Creative Server\n§7Click Here§', ip: 'bedrock.opblocks.com', port: 19132 },
+        { text: '§6Survival Server\n§7Click Here§!', ip: 'bedrock.opblocks.com', port: 19132 },
+      ],
+    },
+    timeout: 60000,
+    timeoutMessage: '§cYou took too long to select a server!',
+  })
+
+  await portal.start()
+}
+
+main()
+```
+
 ### MultipleAccounts
 
 Allows the portal to use multiple accounts to redirect players to the server. `#.use(Modules.MultipleAccounts, options);`
