@@ -83,7 +83,7 @@ export default class ServerFromList extends Module {
   private handleFormResponse(response: FormResponsePacket, client: any) {
 
     if(response.has_cancel_reason) {
-      setInterval(() => this.sendForm(client), 5000)
+      setTimeout(() => this.sendForm(client), 5000)
       return
     }
 
