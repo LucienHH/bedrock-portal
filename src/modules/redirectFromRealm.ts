@@ -12,6 +12,36 @@ export default class RedirectFromRealm extends Module {
 
   public heartbeat: NodeJS.Timeout | null = null
 
+  public options: {
+    /**
+     * The client options to use when connecting to the Realm. These are passed directly to a [bedrock-protocol createClient](https://github.com/PrismarineJS/bedrock-protocol/blob/master/docs/API.md#becreateclientoptions--client)
+     * @type {ClientOptions}
+     * @default {}
+     */
+    clientOptions: any,
+    /**
+     * Options for the chat command
+     * @type {object}
+     */
+    chatCommand: {
+      /**
+       * Whether sending the command in chat should trigger an invite
+       * @default true
+      */
+      enabled: boolean,
+      /**
+       * The message to send in chat to run the command
+       * @default 'invite'
+      */
+      cooldown: number,
+      /**
+       * The cooldown between being able to send the command in chat
+       * @default 60000
+      */
+      message: string,
+    },
+  }
+
   constructor() {
     super('redirectFromRealm', 'Automatically invite players to the server when they join a Realm')
     this.options = {

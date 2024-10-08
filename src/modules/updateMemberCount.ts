@@ -6,6 +6,19 @@ export default class UpdateMemberCount extends Module {
 
   public ping: any
 
+  public options: {
+    /**
+      * How often to update the member count
+      * @default 60000
+    */
+    updateInterval: number,
+    /**
+      * Whether to update the max member count
+      * @default true
+    */
+    updateMaxMemberCount: boolean,
+  }
+
   constructor() {
     super('updateMemberCount', 'Periodically updates the member count of the session to the amount of players online')
     this.options = {

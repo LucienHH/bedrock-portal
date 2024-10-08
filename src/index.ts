@@ -104,9 +104,11 @@ type BedrockPortalOptions = {
   },
 };
 
-interface ExtendedModule {
-  new (...args: any[]): Module;
+interface ExtendedModule extends Module {
+  options: any;
 }
+
+type ExtendedModuleConstructor<T extends ExtendedModule> = new (...args: any[]) => T;
 
 interface PortalEvents {
   sessionCreated: (session: RESTSessionResponse) => void
@@ -291,7 +293,9 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    *   inviteOnAdd: true
    * })
    */
-  use(mod: ExtendedModule, options = {}) {
+
+  use<T extends ExtendedModule>(mod: ExtendedModuleConstructor<T>, options?: Partial<T['options']>) {
+
     const constructed = new mod()
 
     debug(`Enabled module: ${constructed.name}`)

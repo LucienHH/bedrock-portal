@@ -190,7 +190,7 @@ const portal = new BedrockPortal(auth, { ... })
 
 portal.use(Modules.UpdateMemberCount, {
   updateInterval: 60000,
-  updateMaxMemberCount: false,
+  updateMaxMemberCount: true,
 });
 ```
 

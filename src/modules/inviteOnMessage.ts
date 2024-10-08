@@ -9,6 +9,19 @@ export default class IniteOnMessage extends Module {
 
   public cache: Conversation[]
 
+  public options: {
+    /**
+     * The message to look for in chat to trigger inviting the player
+     * @default 'invite'
+    */
+    command: string,
+    /**
+     * How often to check for new messages in milliseconds
+     * @default 30000
+    */
+    checkInterval: number,
+  }
+
   constructor() {
     super('initeOnMessage', 'Automatically invite players to the server when they message you')
 
