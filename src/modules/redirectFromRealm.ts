@@ -83,7 +83,7 @@ export default class RedirectFromRealm extends Module {
 
       this.client = this.bedrock.createClient(options)
 
-      if (this.options.overideDeviceOS) this.client.session.deviceOS = this.options.overideDeviceOS
+      if (this.options.overideDeviceOS) this.client.session = { deviceOS: this.options.overideDeviceOS }
 
       this.client.once('error', (e: any) => (this.client = null, reject(e)))
 
