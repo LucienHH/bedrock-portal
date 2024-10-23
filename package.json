@@ -28,6 +28,7 @@
     "prismarine-auth": "github:LucienHH/prismarine-auth#playfab",
     "tiny-typed-emitter": "^2.1.0",
     "uuid": "^9.0.0",
+    "xbox-message": "^0.2.0",
     "xbox-rta": "^2.1.0"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 import type { RESTSessionResponse, SessionRequest } from './types/sessiondirectory'
-import type { Message } from './types/xblmessaging'
+import type { Message } from 'xbox-message'
 
 import debugFn from 'debug'
 import { v4 as uuidV4 } from 'uuid'
