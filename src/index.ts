@@ -296,7 +296,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   use<T extends ExtendedModule>(mod: ExtendedModuleConstructor<T>, options?: Partial<T['options']>) {
 
-    const constructed = new mod()
+    const constructed = new mod(this)
 
     debug(`Enabled module: ${constructed.name}`)
 

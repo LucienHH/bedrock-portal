@@ -48,8 +48,8 @@ export default class ServerFromList extends Module {
     timeoutMessage: string,
   }
 
-  constructor() {
-    super('serverFromList', 'Allows players to join the server from a list of servers')
+  constructor(portal: BedrockPortal) {
+    super(portal, 'serverFromList', 'Allows players to join the server from a list of servers')
     this.options = {
       form: {
         title: '§l§aServer Form List',
@@ -68,9 +68,9 @@ export default class ServerFromList extends Module {
 
   }
 
-  async run(portal: BedrockPortal) {
+  async run() {
 
-    portal.onServerConnection = (client) => {
+    this.portal.onServerConnection = (client) => {
 
       client.once('join', () => this.handleJoin(client))
 

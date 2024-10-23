@@ -30,8 +30,8 @@ export default class AutoFriendAccept extends Module {
     conditionToMeet: (request: FriendRequestPerson) => boolean,
   }
 
-  constructor() {
-    super('autoFriendAccept', 'Automatically accept friend requests')
+  constructor(portal: BedrockPortal) {
+    super(portal, 'autoFriendAccept', 'Automatically accept friend requests')
 
     this.options = {
       inviteOnAdd: false,
@@ -39,7 +39,7 @@ export default class AutoFriendAccept extends Module {
     }
   }
 
-  async run(portal: BedrockPortal) {
+  async run() {
 
     const addXboxFriend = async (host: Host) => {
 
@@ -61,12 +61,12 @@ export default class AutoFriendAccept extends Module {
         this.debug(`Accepted ${accept.updatedPeople.length} friend request(s)`)
 
         for (const person of requests.filter(req => accept.updatedPeople.includes(req.xuid))) {
-          portal.emit('friendAdded', new Player(person, null))
+          this.portal.emit('friendAdded', new Player(person, null))
 
           this.debug(`Accepted ${person.gamertag}`)
 
           if (this.options.inviteOnAdd) {
-            await portal.invitePlayer(person.xuid).catch(error => this.debug(`Error: Failed to invite ${person.gamertag}`, error))
+            await this.portal.invitePlayer(person.xuid).catch(error => this.debug(`Error: Failed to invite ${person.gamertag}`, error))
           }
         }
 
@@ -76,7 +76,7 @@ export default class AutoFriendAccept extends Module {
 
     }
 
-    const multipleAccounts = portal.modules.get('multipleAccounts')
+    const multipleAccounts = this.portal.modules.get('multipleAccounts')
 
     if (multipleAccounts && multipleAccounts instanceof MultipleAccounts) {
       for (const account of multipleAccounts.peers.values()) {
@@ -85,7 +85,7 @@ export default class AutoFriendAccept extends Module {
       }
     }
 
-    addXboxFriend(portal.host)
+    addXboxFriend(this.portal.host)
       .catch(error => this.debug(`Error: ${error.message}`, error))
 
   }

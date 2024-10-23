@@ -4,6 +4,8 @@ import { BedrockPortal } from '..'
 
 export default class Module {
 
+  public portal: BedrockPortal
+
   public name: string
 
   public description: string
@@ -14,7 +16,10 @@ export default class Module {
 
   public debug: debugFn.Debugger
 
-  constructor(name: string, description: string) {
+  constructor(portal: BedrockPortal, name: string, description: string) {
+
+    this.portal = portal
+
     this.name = name
 
     this.description = description

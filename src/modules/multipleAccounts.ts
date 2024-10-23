@@ -23,8 +23,8 @@ export default class MultipleAccounts extends Module {
 
   public peers: Map<string, Host>
 
-  constructor() {
-    super('multipleAccounts', 'Make the portal session joinable from multiple accounts')
+  constructor(portal: BedrockPortal) {
+    super(portal, 'multipleAccounts', 'Make the portal session joinable from multiple accounts')
 
     this.options = {
       accounts: [],
@@ -34,9 +34,9 @@ export default class MultipleAccounts extends Module {
 
   }
 
-  async run(portal: BedrockPortal) {
+  async run() {
 
-    if (!portal.host || !portal.host.profile) {
+    if (!this.portal.host || !this.portal.host.profile) {
       this.debug('No host to connect to')
       return
     }
@@ -45,7 +45,7 @@ export default class MultipleAccounts extends Module {
 
     for (const account of this.options.accounts) {
 
-      const peer = new Host(portal, account)
+      const peer = new Host(this.portal, account)
 
       await peer.connect()
 
@@ -58,22 +58,22 @@ export default class MultipleAccounts extends Module {
 
       this.debug(`Connected ${peer.profile.gamertag}`)
 
-      const hostAddPeer = await portal.host.rest.addXboxFriend(peer.profile.xuid)
+      const hostAddPeer = await this.portal.host.rest.addXboxFriend(peer.profile.xuid)
         .catch(error => ({ error }))
 
-      const peerAddHost = await peer.rest.addXboxFriend(portal.host.profile.xuid)
+      const peerAddHost = await peer.rest.addXboxFriend(this.portal.host.profile.xuid)
         .catch(error => ({ error }))
 
       if ((hostAddPeer && 'error' in hostAddPeer) || (peerAddHost && 'error' in peerAddHost)) {
         if (hostAddPeer) this.debug(`Failed to add ${peer.profile.gamertag} as a friend - ${hostAddPeer.error.message}`)
-        if (peerAddHost) this.debug(`Failed to add ${portal.host.profile.gamertag} as a friend - ${peerAddHost.error.message}`)
-        console.error(`Error creating a friendship between ${portal.host.profile.gamertag} and ${peer.profile.gamertag} - BedrockPortal will continue to run, but will not be joinable from ${peer.profile.gamertag}`)
+        if (peerAddHost) this.debug(`Failed to add ${this.portal.host.profile.gamertag} as a friend - ${peerAddHost.error.message}`)
+        console.error(`Error creating a friendship between ${this.portal.host.profile.gamertag} and ${peer.profile.gamertag} - BedrockPortal will continue to run, but will not be joinable from ${peer.profile.gamertag}`)
         continue
       }
 
-      await peer.rest.addConnection(portal.session.name, peer.profile.xuid, peer.connectionId, peer.subscriptionId)
+      await peer.rest.addConnection(this.portal.session.name, peer.profile.xuid, peer.connectionId, peer.subscriptionId)
 
-      await peer.rest.setActivity(portal.session.name)
+      await peer.rest.setActivity(this.portal.session.name)
 
     }
   }

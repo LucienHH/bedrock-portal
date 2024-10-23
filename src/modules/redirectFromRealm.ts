@@ -47,8 +47,8 @@ export default class RedirectFromRealm extends Module {
     },
   }
 
-  constructor() {
-    super('redirectFromRealm', 'Automatically invite players to the server when they join a Realm')
+  constructor(portal: BedrockPortal) {
+    super(portal, 'redirectFromRealm', 'Automatically invite players to the server when they join a Realm')
     this.options = {
       clientOptions: { }, // Options for the bedrock-protocol client
       overideDeviceOS: 7,
@@ -67,18 +67,18 @@ export default class RedirectFromRealm extends Module {
     }
   }
 
-  async run(portal: BedrockPortal) {
+  async run() {
 
     const { clientOptions } = this.options
 
-    const client = await this.initClient(clientOptions, portal)
+    const client = await this.initClient(clientOptions)
       .catch(error => ({ error }))
 
     if ('error' in client) return console.error(`Error connecting to Realm - ${client.error.message}. BedrockPortal will continue to run, but will not be able to redirect players from this realm.`)
 
   }
 
-  async initClient(options: any, portal: BedrockPortal) {
+  async initClient(options: any) {
     return new Promise<any>((resolve, reject) => {
 
       this.client = this.bedrock.createClient(options)
@@ -103,7 +103,7 @@ export default class RedirectFromRealm extends Module {
 
           this.debug('Attempting to reconnect to Realm')
 
-          return this.initClient(options, portal).catch(err => {
+          return this.initClient(options).catch(err => {
             this.debug(`Error reconnecting to Realm - ${err.message}`)
           })
 
@@ -116,7 +116,7 @@ export default class RedirectFromRealm extends Module {
         if (packet.records.type !== 'add') return
 
         for (const record of packet.records.records) {
-          portal.invitePlayer(record.xbox_user_id)
+          this.portal.invitePlayer(record.xbox_user_id)
             .catch(e => this.debug(`Failed to invite ${record.xbox_user_id} - ${e.message}`))
         }
       })
@@ -130,7 +130,7 @@ export default class RedirectFromRealm extends Module {
 
         setTimeout(() => cd.delete(packet.xuid), this.options.chatCommand.cooldown)
 
-        portal.invitePlayer(packet.xuid)
+        this.portal.invitePlayer(packet.xuid)
           .catch(e => this.debug(`Failed to invite ${packet.xuid} - ${e.message}`))
       })
 

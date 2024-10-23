@@ -43,8 +43,8 @@ export default class AutoFriendAdd extends Module {
     removeInterval: number,
   }
 
-  constructor() {
-    super('autoFriendAdd', 'Automatically adds followers as friends')
+  constructor(portal: BedrockPortal) {
+    super(portal, 'autoFriendAdd', 'Automatically adds followers as friends')
 
     this.options = {
       inviteOnAdd: false,
@@ -55,7 +55,7 @@ export default class AutoFriendAdd extends Module {
     }
   }
 
-  async run(portal: BedrockPortal) {
+  async run() {
 
     const addXboxFriend = async (host: Host) => {
       this.debug('Checking for followers to add')
@@ -75,12 +75,12 @@ export default class AutoFriendAdd extends Module {
         })
 
         if (this.options.inviteOnAdd) {
-          await portal.invitePlayer(account.xuid).catch(() => {
+          await this.portal.invitePlayer(account.xuid).catch(() => {
             throw Error(`Failed to invite ${account.gamertag}`)
           })
         }
 
-        portal.emit('friendAdded', new Player(account, null))
+        this.portal.emit('friendAdded', new Player(account, null))
 
         this.debug(`Added & invited ${account.gamertag}`)
 
@@ -103,7 +103,7 @@ export default class AutoFriendAdd extends Module {
           throw Error(`Failed to remove ${account.gamertag}`)
         })
 
-        portal.emit('friendRemoved', new Player(account, null))
+        this.portal.emit('friendRemoved', new Player(account, null))
 
         this.debug(`Removed ${account.gamertag}`)
 
@@ -114,7 +114,7 @@ export default class AutoFriendAdd extends Module {
 
     this.interval = setInterval(() => {
 
-      const multipleAccounts = portal.modules.get('multipleAccounts')
+      const multipleAccounts = this.portal.modules.get('multipleAccounts')
 
       if (multipleAccounts && multipleAccounts instanceof MultipleAccounts) {
         for (const account of multipleAccounts.peers.values()) {
@@ -123,7 +123,7 @@ export default class AutoFriendAdd extends Module {
         }
       }
 
-      addXboxFriend(portal.host)
+      addXboxFriend(this.portal.host)
         .catch(error => this.debug(`Error: ${error.message}`, error))
 
     }, this.options.checkInterval)
