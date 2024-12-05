@@ -7,8 +7,6 @@ const main = async () => {
   const auth = new Authflow('example', './', { authTitle: Titles.XboxAppIOS, deviceType: 'iOS', flow: 'sisu' })
 
   const portal = new BedrockPortal(auth, {
-    ip: 'bedrock.opblocks.com',
-    port: 19132,
     joinability: Joinability.FriendsOfFriends,
     world: {
       hostName: 'BedrockPortal',

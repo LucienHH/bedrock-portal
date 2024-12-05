@@ -99,7 +99,14 @@ export default class ServerFromList extends Module {
   }
 
   private handleJoin(client: any) {
-    client.write('resource_packs_info', { must_accept: false, has_addons: false, has_scripts: false, texture_packs: [] })
+    client.write('resource_packs_info', {
+      must_accept: false,
+      has_scripts: false,
+      behaviour_packs: [],
+      world_template: { uuid: '550e8400-e29b-41d4-a716-446655440000', version: '' },
+      texture_packs: [],
+      resource_pack_links: [],
+    })
 
     client.write('resource_pack_stack', { must_accept: false, behavior_packs: [], resource_packs: [], game_version: '', experiments: [], experiments_previously_used: false })
 
