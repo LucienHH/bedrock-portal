@@ -149,9 +149,9 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
       webRTCNetworkId: getRandomUint64(),
       ...options,
       world: {
-        hostName: 'Bedrock Portal v0.9.2',
+        hostName: 'Bedrock Portal v0.9.4',
         name: 'By LucienHH',
-        version: '0.9.2',
+        version: '0.9.4',
         memberCount: 0,
         maxMemberCount: 10,
         ...options.world,
