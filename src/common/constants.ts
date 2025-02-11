@@ -2,7 +2,7 @@ export const SessionConfig = {
   MinecraftTitleID: '896928775',
   MinecraftSCID: '4fc10100-5f7a-4470-899b-280835760c07',
   MinecraftTemplateName: 'MinecraftLobby',
-  MiencraftProtocolVersion: 766,
+  MiencraftProtocolVersion: 776,
 }
 
 export enum Joinability {

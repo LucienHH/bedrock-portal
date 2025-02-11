@@ -85,7 +85,6 @@ export const start_game = {
   ],
   enchantment_seed: 1364936554,
   block_properties: [],
-  itemstates: [],
   multiplayer_correlation_id: '<raknet>b9a6-e1e1-e4ef-086b',
   server_authoritative_inventory: true,
   engine: '1.21.20',
