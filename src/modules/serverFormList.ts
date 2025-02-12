@@ -112,7 +112,7 @@ export default class ServerFromList extends Module {
 
     client.once('resource_pack_client_response', async () => {
       client.write('start_game', start_game)
-
+      client.write('item_registry', { itemstates: [] })
       client.write('play_status', { status: 'player_spawn' })
     })
 
