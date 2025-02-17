@@ -175,9 +175,9 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
         ...options.authflow,
       },
       world: {
-        hostName: 'Bedrock Portal v0.9.5',
+        hostName: 'Bedrock Portal v1.0.0',
         name: 'By LucienHH',
-        version: '0.9.5',
+        version: '1.0.0',
         memberCount: 0,
         maxMemberCount: 10,
         ...options.world,
