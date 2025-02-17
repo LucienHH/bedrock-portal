@@ -26,6 +26,8 @@ export default class Host {
 
   public subscriptionId: string = uuidV4()
 
+  public presenceInterval: NodeJS.Timeout | null = null
+
   constructor(portal: BedrockPortal, authflow: Authflow) {
 
     this.portal = portal
@@ -52,6 +54,32 @@ export default class Host {
 
     this.rta.on('subscribe', (event: EventResponse) => this.onSubscribe(event))
 
+    if (this.portal.options.updatePresence) {
+      const updatePresence = () => {
+        if (this.profile) {
+          this.rest.setPresence(this.profile.xuid)
+            .catch(e => { debug('Failed to set presence', e) })
+        }
+      }
+
+      this.presenceInterval = setInterval(updatePresence, 300000)
+
+      updatePresence()
+    }
+
+  }
+
+  async disconnect() {
+    if (this.rta) {
+      await this.rta.destroy()
+    }
+
+    if (this.presenceInterval) {
+      clearInterval(this.presenceInterval)
+    }
+
+    await this.rest.leaveSession(this.portal.session.name)
+      .catch(() => { debug('Failed to leave session as host') })
   }
 
   private async onSubscribe(event: EventResponse) {

@@ -69,6 +69,12 @@ type BedrockPortalOptions = {
   webRTCNetworkId: bigint,
 
   /**
+   * Whether or not to update the presence of the host. If true the account will be displayed as playing Minecraft in the Xbox app.
+   * @default true
+   */
+  updatePresence: boolean,
+
+  /**
    * The authentication flow to use for the session.
    */
   authflow: {
@@ -152,10 +158,11 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     super()
 
     this.options = {
-      ip: 'bedrock.opblocks.com',
+      ip: '',
       port: 19132,
       joinability: Joinability.FriendsOfFriends,
       webRTCNetworkId: getRandomUint64(),
+      updatePresence: true,
       ...options,
       authflow: {
         username: 'BedrockPortal',
@@ -232,12 +239,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    */
   async end(resume = false) {
 
-    if (this.host.rta) {
-      await this.host.rta.destroy()
-    }
-
-    await this.host.rest.leaveSession(this.session.name)
-      .catch(() => { debug('Failed to leave session as host') })
+    await this.host.disconnect()
 
     if (this.modules) {
       for (const mod of this.modules.values()) {

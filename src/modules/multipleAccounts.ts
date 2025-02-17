@@ -82,13 +82,9 @@ export default class MultipleAccounts extends Module {
     super.stop()
 
     for (const peer of this.peers.values()) {
-
-      if (!peer.rta) continue
-
-      await peer.rta.destroy()
+      await peer.disconnect()
         .then(() => this.debug(`Disconnected ${peer.profile?.gamertag}`))
         .catch(() => this.debug(`Failed to disconnect ${peer.profile?.gamertag}`))
-
     }
 
   }

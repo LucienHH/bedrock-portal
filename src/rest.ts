@@ -65,6 +65,7 @@ export default class Rest {
       url: config.url,
       headers: {
         'authorization': `XBL3.0 x=${auth.userHash};${auth.XSTSToken}`,
+        'content-type': 'application/json',
         'accept-language': 'en-US',
         ...config.headers,
       } as RequestHeaders,
@@ -211,6 +212,10 @@ export default class Rest {
   async getInboxMessages(inbox: 'primary' | 'secondary') {
     const response: RESTXblmessageInboxResponse = await this.get(`https://xblmessaging.xboxlive.com/network/xbox/users/me/inbox/${inbox}`, { contractVersion: '1' })
     return response
+  }
+
+  async setPresence(xuid: string) {
+    await this.post(`https://userpresence.xboxlive.com/users/xuid(${xuid})/devices/current/titles/current`, { data: { state: 'active' } })
   }
 
 }
