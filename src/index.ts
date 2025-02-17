@@ -317,6 +317,8 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   use<T extends ExtendedModule>(mod: ExtendedModuleConstructor<T>, options?: Partial<T['options']>) {
 
+    if (this.host.connectionId) throw new Error('Cannot add modules after the portal has started. Call #.use(...) before calling #.start()')
+
     const constructed = new mod(this)
 
     debug(`Enabled module: ${constructed.name}`)

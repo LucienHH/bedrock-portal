@@ -20,6 +20,7 @@ This package is not meant to be used with your main account. It is meant to be u
   - **ip** - The IP address of the server to redirect players to (required)
   - **port** - The port of the server to redirect players to | default: 19132
   - **joinability** - The joinability of the session  | default: FriendsOfFriends
+  - **updatePresence** - Whether to update the presence of the authenticated account making it appear as if they are playing Minecraft | default: true
   - **world** - The world config to use for the session. Changes the session card which is displayed in the Minecraft client. (optional)
 	  - **hostName** - string
 	  - **name** - string
@@ -54,7 +55,7 @@ main();
 
 ## Modules
 
-Modules are used to extend the functionality of the BedrockPortal class.
+Modules are used to extend the functionality of the BedrockPortal class. **Modules should be initialised before calling the `start` method.**
 
 ### ServerFormList
 
@@ -252,7 +253,6 @@ Automatically invites players to the game when they send a message in the chat. 
 
 Options:
 - **command**: string - The command to use to invite players (default: 'invite')
-- **checkInterval**: number - How often to check for messages (default: 30000ms)
 
 ```js
 const { BedrockPortal, Modules } = require('bedrock-portal');
