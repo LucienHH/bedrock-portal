@@ -4,9 +4,9 @@ import type { Message } from 'xbox-message'
 import debugFn from 'debug'
 import { v4 as uuidV4 } from 'uuid'
 import { EventResponse } from 'xbox-rta'
-import { Authflow } from 'prismarine-auth'
 import { TypedEmitter } from 'tiny-typed-emitter'
 import { Server } from 'bedrock-portal-nethernet'
+import { Authflow, CacheFactory, MicrosoftAuthFlowOptions, Titles } from 'prismarine-auth'
 
 import Host from './classes/Host'
 import Player from './classes/Player'
@@ -67,6 +67,15 @@ type BedrockPortalOptions = {
    * The WebRTC network ID to use for the session.
    */
   webRTCNetworkId: bigint,
+
+  /**
+   * The authentication flow to use for the session.
+   */
+  authflow: {
+    username: string,
+    cache: CacheFactory | string,
+    options: MicrosoftAuthFlowOptions
+  },
 
   /**
    * The world config to use for the session. Changes the session card which is displayed in the Minecraft client
@@ -139,7 +148,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   public server = new Server()
 
-  constructor(authflow: Authflow, options: Partial<BedrockPortalOptions> = {}) {
+  constructor(options: Partial<BedrockPortalOptions> = {}) {
     super()
 
     this.options = {
@@ -148,6 +157,16 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
       joinability: Joinability.FriendsOfFriends,
       webRTCNetworkId: getRandomUint64(),
       ...options,
+      authflow: {
+        username: 'BedrockPortal',
+        cache: './',
+        options: {
+          authTitle: Titles.MinecraftIOS,
+          flow: 'sisu',
+          deviceType: 'iOS',
+        },
+        ...options.authflow,
+      },
       world: {
         hostName: 'Bedrock Portal v0.9.5',
         name: 'By LucienHH',
@@ -160,7 +179,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
     this.validateOptions(this.options)
 
-    this.authflow = authflow
+    this.authflow = new Authflow(this.options.authflow.username, this.options.authflow.cache, this.options.authflow.options)
 
     this.host = new Host(this, this.authflow)
 

@@ -2,12 +2,10 @@
 process.env.DEBUG = 'bedrock-portal*'
 
 const { BedrockPortal, Modules, Joinability } = require('bedrock-portal')
-const { Authflow, Titles } = require('prismarine-auth')
 
 const main = async () => {
-  const auth = new Authflow('example', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' })
 
-  const portal = new BedrockPortal(auth, {
+  const portal = new BedrockPortal({
     ip: 'geyserconnect.net',
     port: 19132,
 

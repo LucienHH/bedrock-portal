@@ -8,9 +8,8 @@ const handleMsaCode = (account, response) => {
 }
 
 const main = async () => {
-  const auth = new Authflow('example', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' })
 
-  const portal = new BedrockPortal(auth, {
+  const portal = new BedrockPortal({
     ip: 'geyserconnect.net',
     port: 19132,
   })
@@ -21,8 +20,8 @@ const main = async () => {
 
   portal.use(Modules.MultipleAccounts, {
     accounts: [
-      new Authflow('account1', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' }, (res) => handleMsaCode('account1', res)),
-      new Authflow('account2', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' }, (res) => handleMsaCode('account2', res)),
+      new Authflow('account1', './', { authTitle: Titles.MinecraftIOS, deviceType: 'iOS', flow: 'sisu' }, (res) => handleMsaCode('account1', res)),
+      new Authflow('account2', './', { authTitle: Titles.MinecraftIOS, deviceType: 'iOS', flow: 'sisu' }, (res) => handleMsaCode('account2', res)),
     ],
   })
 

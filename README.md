@@ -14,9 +14,8 @@ This package is not meant to be used with your main account. It is meant to be u
 
 ## Usage
 
-### BedrockPortal(authflow, options)
+### BedrockPortal(options)
 **Parameters**
-- authflow - Takes an **Authflow** instance from [prismarine-auth](https://github.com/PrismarineJS/prismarine-auth), you can see the documentation for this [here.](https://github.com/PrismarineJS/prismarine-auth#authflow)
 - options
   - **ip** - The IP address of the server to redirect players to (required)
   - **port** - The port of the server to redirect players to | default: 19132
@@ -31,14 +30,12 @@ This package is not meant to be used with your main account. It is meant to be u
 ### Create a session redirect to a server
 ```js
 const { BedrockPortal, Joinability } = require('bedrock-portal');
-const { Authflow, Titles } = require('prismarine-auth');
 
 const main = async () => {
-  const auth = new Authflow('example', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' });
   
-  const portal = new BedrockPortal(auth, {
+  const portal = new BedrockPortal({
     // The server IP & port to redirect players to
-    ip: 'geyserconnect.net',
+    ip: 'your.server.ip',
     port: 19132,
 
      // The joinability of the session. Joinability.FriendsOfFriends, Joinability.FriendsOnly, Joinability.InviteOnly
@@ -48,7 +45,7 @@ const main = async () => {
   await portal.start();
 	
   // accepts a player's gamertag or xuid
-  await portal.invitePlayer('p3')
+  await portal.invitePlayer('your_gamertag_or_xuid');
 
 };
 
@@ -72,12 +69,10 @@ The form will be sent to the player when they join the server and every 5 second
 
 ```js
 const { BedrockPortal, Joinability, Modules } = require('bedrock-portal')
-const { Authflow, Titles } = require('prismarine-auth')
 
 const main = async () => {
-  const auth = new Authflow('example', './', { authTitle: Titles.XboxAppIOS, deviceType: 'iOS', flow: 'sisu' })
 
-  const portal = new BedrockPortal(auth)
+  const portal = new BedrockPortal({ ... })
 
   portal.use(Modules.ServerFromList, {
     form: {
@@ -111,10 +106,8 @@ const { Authflow, Titles } = require('prismarine-auth')
 const { BedrockPortal, Modules } = require('bedrock-portal')
 
 const main = async () => {
-  const auth = new Authflow('example', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' })
-
-  const portal = new BedrockPortal(auth, {
-    ip: 'geyserconnect.net',
+  const portal = new BedrockPortal( {
+    ip: 'your.server.ip',
     port: 19132,
   })
 
@@ -124,8 +117,8 @@ const main = async () => {
 
   portal.use(Modules.MultipleAccounts, {
     accounts: [
-      new Authflow('account1', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' }),
-      new Authflow('account2', './', { authTitle: Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' }),
+      new Authflow('account1', './', { authTitle: Titles.MinecraftIOS, deviceType: 'iOS', flow: 'sisu' }),
+      new Authflow('account2', './', { authTitle: Titles.MinecraftIOS, deviceType: 'iOS', flow: 'sisu' }),
     ],
   })
 
@@ -152,7 +145,7 @@ Options:
 ```js
 const { BedrockPortal, Modules } = require('bedrock-portal');
 
-const portal = new BedrockPortal(auth, { ... })
+const portal = new BedrockPortal({ ... })
 
 portal.use(Modules.RedirectFromRealm, {
   // The client options to use when connecting to the Realm.
@@ -186,7 +179,7 @@ Options:
 ```js
 const { BedrockPortal, Modules } = require('bedrock-portal');
 
-const portal = new BedrockPortal(auth, { ... })
+const portal = new BedrockPortal({ ... })
 
 portal.use(Modules.UpdateMemberCount, {
   updateInterval: 60000,
@@ -208,7 +201,7 @@ Options:
 ```js
 const { BedrockPortal, Modules } = require('bedrock-portal');
 
-const portal = new BedrockPortal(auth, { ... })
+const portal = new BedrockPortal({ ... })
 
 portal.use(Modules.AutoFriendAdd);
 
@@ -239,7 +232,7 @@ Options:
 ```js
 const { BedrockPortal, Modules } = require('bedrock-portal');
 
-const portal = new BedrockPortal(auth, { ... })
+const portal = new BedrockPortal({ ... })
 
 portal.use(Modules.AutoFriendAccept);
 
@@ -264,7 +257,7 @@ Options:
 ```js
 const { BedrockPortal, Modules } = require('bedrock-portal');
 
-const portal = new BedrockPortal(auth, { ... })
+const portal = new BedrockPortal({ ... })
 
 portal.use(Modules.InviteOnMessage);
 
@@ -272,9 +265,7 @@ portal.use(Modules.InviteOnMessage);
 
 portal.use(Modules.InviteOnMessage, {
   // The command to use to invite players (optional - defaults to 'invite')
-  command: 'invite',
-  // How often to check for messages (optional - defaults to 30000ms)
-  checkInterval: 30000,
+  command: 'invite'
 });
 ```
 

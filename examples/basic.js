@@ -1,12 +1,9 @@
 process.env.DEBUG = 'bedrock-portal*'
 
-const { BedrockPortal, Joinability, Modules } = require('bedrock-portal')
-const { Authflow, Titles } = require('prismarine-auth')
+const { BedrockPortal, Joinability } = require('bedrock-portal')
 
 const main = async () => {
-  const auth = new Authflow('example', './', { authTitle: Titles.XboxAppIOS, deviceType: 'iOS', flow: 'sisu' })
-
-  const portal = new BedrockPortal(auth, {
+  const portal = new BedrockPortal({
     ip: 'bedrock.opblocks.com',
     port: 19132,
     joinability: Joinability.FriendsOfFriends,
