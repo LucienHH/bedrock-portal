@@ -116,6 +116,18 @@ type BedrockPortalOptions = {
      */
     maxMemberCount: number,
 
+    /**
+     * Whether or not the world is hardcore.
+     * @default false
+     */
+    isHardcore: boolean,
+
+    /**
+     * Whether or not the world is an editor world.
+     * @default false
+     */
+    isEditor: boolean,
+
   },
 };
 
@@ -180,6 +192,8 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
         version: '1.0.0',
         memberCount: 0,
         maxMemberCount: 10,
+        isHardcore: false,
+        isEditor: false,
         ...options.world,
       },
     }
@@ -406,6 +420,8 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
           TransportLayer: 2,
           LanGame: true,
           WebRTCNetworkId: this.options.webRTCNetworkId,
+          isHardcore: this.options.world.isHardcore,
+          isEditorWorld: this.options.world.isEditor,
           SupportedConnections: [
             {
               ConnectionType: 3,

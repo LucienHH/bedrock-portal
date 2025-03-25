@@ -131,6 +131,8 @@ export interface SessionRequest {
       OnlineCrossPlatformGame?: boolean,
       CrossPlayDisabled?: boolean,
       TitleId?: number,
+      isHardcore?: boolean,
+      isEditorWorld?: boolean,
       SupportedConnections?: SessionConnection[],
     }
   },
