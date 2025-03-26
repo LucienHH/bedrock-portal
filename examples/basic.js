@@ -10,8 +10,8 @@ const main = async () => {
     world: {
       hostName: 'BedrockPortal',
       name: 'BedrockPortal',
-      version: '1.21.20',
-      memberCount: 0,
+      version: '1.21.70',
+      memberCount: 1,
       maxMemberCount: 10,
     },
   })

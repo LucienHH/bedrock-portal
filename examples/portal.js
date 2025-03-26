@@ -25,7 +25,7 @@ const main = async () => {
       version: '1',
 
       // The current member count of the world
-      memberCount: 0,
+      memberCount: 1,
 
       // The max member count of the world
       maxMemberCount: 10,

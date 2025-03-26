@@ -190,7 +190,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
         hostName: 'Bedrock Portal v1.0.0',
         name: 'By LucienHH',
         version: '1.0.0',
-        memberCount: 0,
+        memberCount: 1,
         maxMemberCount: 10,
         isHardcore: false,
         isEditor: false,
@@ -213,6 +213,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   validateOptions(options: BedrockPortalOptions) {
     if (!Object.values(Joinability).includes(options.joinability)) throw new Error('Invalid joinability - Expected one of ' + Object.keys(Joinability).join(', '))
+    if (options.world.memberCount < 0) throw new Error('Invalid member count - Expected a number greater than or equal to 0')
   }
 
   /**
