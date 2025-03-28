@@ -213,7 +213,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   validateOptions(options: BedrockPortalOptions) {
     if (!Object.values(Joinability).includes(options.joinability)) throw new Error('Invalid joinability - Expected one of ' + Object.keys(Joinability).join(', '))
-    if (options.world.memberCount < 0) throw new Error('Invalid member count - Expected a number greater than or equal to 0')
+    if (options.world.memberCount <= 0) throw new Error('Invalid member count - Expected a number greater than 0')
   }
 
   /**
@@ -301,6 +301,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    * @param maxCount The new max member count.
    */
   async updateMemberCount(count: number, maxCount?: number) {
+    if (count <= 0) count = 1
     await this.host.rest.updateMemberCount(this.session.name, count, maxCount)
   }
 
