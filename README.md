@@ -19,7 +19,11 @@ This package is not meant to be used with your main account. It is meant to be u
 - options
   - **ip** - The IP address of the server to redirect players to (required)
   - **port** - The port of the server to redirect players to | default: 19132
-  - **joinability** - The joinability of the session  | default: FriendsOfFriends
+  - **joinability** - The joinability of the session  | default: Joinability.FriendsOfFriends
+  - **authflow** - Either an Authflow instance from [prismarine-auth](https://github.com/PrismarineJS/prismarine-auth#authflow) or an object with the following properties:
+    - **username** - The username of the account to use for the session | default: 'BedrockPortal'
+    - **cache** - The cache directory to use for the session | default: './'
+    - **options** - Options for the Authflow instance from [prismarine-auth](https://github.com/PrismarineJS/prismarine-auth#authflow)
   - **updatePresence** - Whether to update the presence of the authenticated account making it appear as if they are playing Minecraft | default: true
   - **world** - The world config to use for the session. Changes the session card which is displayed in the Minecraft client. (optional)
 	  - **hostName** - string

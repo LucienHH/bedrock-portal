@@ -29,6 +29,12 @@ import { getRandomUint64, isXuid } from './common/util'
 
 const debug = debugFn('bedrock-portal')
 
+type AuthflowOptions = {
+  username: string;
+  cache: string | CacheFactory;
+  options: MicrosoftAuthFlowOptions;
+};
+
 type BedrockPortalOptions = {
 
   /**
@@ -77,11 +83,7 @@ type BedrockPortalOptions = {
   /**
    * The authentication flow to use for the session.
    */
-  authflow: {
-    username: string,
-    cache: CacheFactory | string,
-    options: MicrosoftAuthFlowOptions
-  },
+  authflow: AuthflowOptions | Authflow,
 
   /**
    * The world config to use for the session. Changes the session card which is displayed in the Minecraft client
@@ -176,7 +178,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
       webRTCNetworkId: getRandomUint64(),
       updatePresence: true,
       ...options,
-      authflow: {
+      authflow: options.authflow instanceof Authflow ? options.authflow : {
         username: 'BedrockPortal',
         cache: './',
         options: {
@@ -200,7 +202,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
     this.validateOptions(this.options)
 
-    this.authflow = new Authflow(this.options.authflow.username, this.options.authflow.cache, this.options.authflow.options)
+    this.authflow = this.options.authflow instanceof Authflow ? this.options.authflow : new Authflow(this.options.authflow.username, this.options.authflow.cache, this.options.authflow.options)
 
     this.host = new Host(this, this.authflow)
 
