@@ -102,6 +102,7 @@ export const start_game = {
   ],
   world_template_id: '00000000-0000-0000-0000-000000000000',
   client_side_generation: false,
+  tick_death_systems: true,
   block_network_ids_are_hashes: true,
   server_controlled_sound: true,
 }
