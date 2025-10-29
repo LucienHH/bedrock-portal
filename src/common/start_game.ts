@@ -90,16 +90,13 @@ export const start_game = {
   block_properties: [],
   multiplayer_correlation_id: '<raknet>a2f1-c28f-0808-d27c',
   server_authoritative_inventory: true,
-  engine: '1.21.111',
+  engine: '1.21.120',
   property_data: {
     type: 'compound',
     name: '',
     value: {},
   },
-  block_pallette_checksum: [
-    1988470248,
-    1905879201,
-  ],
+  block_pallette_checksum: [],
   world_template_id: '00000000-0000-0000-0000-000000000000',
   client_side_generation: false,
   block_network_ids_are_hashes: true,
