@@ -90,7 +90,7 @@ export default class ServerFromList extends Module {
     client.write('modal_form_request', {
       form_id: this.n++,
       data: JSON.stringify({
-        type:'form',
+        type: 'form',
         title: this.options.form.title,
         content: this.options.form.content,
         buttons: this.options.form.buttons.map((button: any) => ({ text: button.text })),
@@ -99,16 +99,27 @@ export default class ServerFromList extends Module {
   }
 
   private handleJoin(client: any) {
+
     client.write('resource_packs_info', {
       must_accept: false,
+      has_addons: false,
       has_scripts: false,
-      behaviour_packs: [],
-      world_template: { uuid: '550e8400-e29b-41d4-a716-446655440000', version: '' },
+      disable_vibrant_visuals: false,
+      world_template: {
+        uuid: '',
+        version: '',
+      },
       texture_packs: [],
-      resource_pack_links: [],
     })
 
-    client.write('resource_pack_stack', { must_accept: false, behavior_packs: [], resource_packs: [], game_version: '', experiments: [], experiments_previously_used: false })
+    client.write('resource_pack_stack', {
+      must_accept: false,
+      resource_packs: [],
+      game_version: '*',
+      experiments: [],
+      experiments_previously_used: false,
+      has_editor_packs: false,
+    })
 
     client.once('resource_pack_client_response', async () => {
       client.write('start_game', start_game)
@@ -121,7 +132,7 @@ export default class ServerFromList extends Module {
 
   private handleFormResponse(response: FormResponsePacket, client: any) {
 
-    if(response.has_cancel_reason) {
+    if (response.has_cancel_reason) {
       setTimeout(() => this.sendForm(client), 5000)
       return
     }
