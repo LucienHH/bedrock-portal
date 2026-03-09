@@ -41,39 +41,51 @@ export default class MultipleAccounts extends Module {
       return
     }
 
-    await Promise.all(this.options.accounts.map(account => account.getXboxToken()))
-
     for (const account of this.options.accounts) {
 
-      const peer = new Host(this.portal, account)
+      let peer: Host | null = null
 
-      await peer.connect()
+      try {
 
-      if (!peer.profile || !peer.connectionId) {
-        this.debug(`Failed to connect to ${account.username}`)
-        continue
+        peer = new Host(this.portal, account)
+
+        await peer.connect()
+
+        if (!peer.profile || !peer.connectionId) {
+          throw Error(`Failed to connect to ${account.username}`)
+        }
+
+        this.debug(`Connected ${peer.profile.gamertag}`)
+
+        const hostAddPeer = await this.portal.host.rest.addXboxFriend(peer.profile.xuid)
+          .then(() => null)
+          .catch(error => error)
+
+        const peerAddHost = await peer.rest.addXboxFriend(this.portal.host.profile.xuid)
+          .then(() => null)
+          .catch(error => error)
+
+        if (hostAddPeer || peerAddHost) {
+          if (hostAddPeer) this.debug(`Failed to add ${peer.profile.gamertag} as a friend - ${hostAddPeer.message}`)
+          if (peerAddHost) this.debug(`Failed to add ${this.portal.host.profile.gamertag} as a friend - ${peerAddHost.message}`)
+          throw Error(`Failed to create friendship between ${this.portal.host.profile.gamertag} and ${peer.profile.gamertag}`)
+        }
+
+        await peer.rest.addConnection(this.portal.session.name, peer.profile.xuid, peer.connectionId, peer.subscriptionId)
+
+        await peer.rest.setActivity(this.portal.session.name)
+
+        this.peers.set(peer.profile.xuid, peer)
+
       }
+      catch (error: any) {
+        this.debug(`Failed to initialise ${account.username} - ${error.message}`)
 
-      this.peers.set(peer.profile.xuid, peer)
-
-      this.debug(`Connected ${peer.profile.gamertag}`)
-
-      const hostAddPeer = await this.portal.host.rest.addXboxFriend(peer.profile.xuid)
-        .catch(error => ({ error }))
-
-      const peerAddHost = await peer.rest.addXboxFriend(this.portal.host.profile.xuid)
-        .catch(error => ({ error }))
-
-      if ((hostAddPeer && 'error' in hostAddPeer) || (peerAddHost && 'error' in peerAddHost)) {
-        if (hostAddPeer) this.debug(`Failed to add ${peer.profile.gamertag} as a friend - ${hostAddPeer.error.message}`)
-        if (peerAddHost) this.debug(`Failed to add ${this.portal.host.profile.gamertag} as a friend - ${peerAddHost.error.message}`)
-        console.error(`Error creating a friendship between ${this.portal.host.profile.gamertag} and ${peer.profile.gamertag} - BedrockPortal will continue to run, but will not be joinable from ${peer.profile.gamertag}`)
-        continue
+        if (peer) {
+          await peer.disconnect()
+            .catch(() => this.debug(`Failed to disconnect ${peer?.profile?.gamertag ?? account.username}`))
+        }
       }
-
-      await peer.rest.addConnection(this.portal.session.name, peer.profile.xuid, peer.connectionId, peer.subscriptionId)
-
-      await peer.rest.setActivity(this.portal.session.name)
 
     }
   }
@@ -86,6 +98,8 @@ export default class MultipleAccounts extends Module {
         .then(() => this.debug(`Disconnected ${peer.profile?.gamertag}`))
         .catch(() => this.debug(`Failed to disconnect ${peer.profile?.gamertag}`))
     }
+
+    this.peers.clear()
 
   }
 
