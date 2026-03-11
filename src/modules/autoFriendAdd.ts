@@ -7,8 +7,6 @@ import Module from '../classes/Module'
 import Player from '../classes/Player'
 import Host from '../classes/Host'
 
-import MultipleAccounts from './multipleAccounts'
-
 export default class AutoFriendAdd extends Module {
 
   public interval: NodeJS.Timeout | null = null
@@ -67,7 +65,7 @@ export default class AutoFriendAdd extends Module {
 
       const needsAdding = followers.filter(res => !res.isFollowedByCaller && this.options.conditionToMeet(res))
 
-      this.debug(`Adding ${needsAdding.length} account(s) [${needsAdding.map(res=> res.gamertag).join(', ')}]`)
+      this.debug(`Adding ${needsAdding.length} account(s) [${needsAdding.map(res => res.gamertag).join(', ')}]`)
 
       for (const account of needsAdding) {
         await host.rest.addXboxFriend(account.xuid).catch(() => {
@@ -114,17 +112,10 @@ export default class AutoFriendAdd extends Module {
 
     this.interval = setInterval(() => {
 
-      const multipleAccounts = this.portal.modules.get('multipleAccounts')
-
-      if (multipleAccounts && multipleAccounts instanceof MultipleAccounts) {
-        for (const account of multipleAccounts.peers.values()) {
-          addXboxFriend(account)
-            .catch(error => this.debug(`Error: ${error.message}`, error))
-        }
+      for (const account of this.portal.getHostAndPeers()) {
+        addXboxFriend(account)
+          .catch(error => this.debug(`Error: ${error.message}`, error))
       }
-
-      addXboxFriend(this.portal.host)
-        .catch(error => this.debug(`Error: ${error.message}`, error))
 
     }, this.options.checkInterval)
 

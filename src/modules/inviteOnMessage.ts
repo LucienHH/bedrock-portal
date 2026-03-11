@@ -3,7 +3,6 @@ import type { BedrockPortal } from '../index'
 import { XboxMessage } from 'xbox-message'
 
 import Module from '../classes/Module'
-import MultipleAccounts from './multipleAccounts'
 import Host from '../classes/Host'
 
 export default class IniteOnMessage extends Module {
@@ -56,16 +55,10 @@ export default class IniteOnMessage extends Module {
 
     }
 
-    const multipleAccounts = this.portal.modules.get('multipleAccounts')
-
-    if (multipleAccounts && multipleAccounts instanceof MultipleAccounts) {
-      for (const account of multipleAccounts.peers.values()) {
-        xboxMessageHandler(account)
-          .catch(error => this.debug(`Error: ${error.message}`, error))
-      }
+    for (const account of this.portal.getHostAndPeers()) {
+      xboxMessageHandler(account)
+        .catch(error => this.debug(`Error: ${error.message}`, error))
     }
-
-    xboxMessageHandler(this.portal.host)
 
   }
 
@@ -75,6 +68,8 @@ export default class IniteOnMessage extends Module {
     for (const client of this.clients.values()) {
       await client.destroy()
     }
+
+    this.clients.clear()
   }
 
 }

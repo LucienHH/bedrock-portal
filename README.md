@@ -20,11 +20,12 @@ This package is not meant to be used with your main account. It is meant to be u
   - **ip** - The IP address of the server to redirect players to (required)
   - **port** - The port of the server to redirect players to | default: 19132
   - **joinability** - The joinability of the session  | default: Joinability.FriendsOfFriends
-  - **authflow** - Either an Authflow instance from [prismarine-auth](https://github.com/PrismarineJS/prismarine-auth#authflow) or an object with the following properties:
+  - **host** - Either an Authflow instance from [prismarine-auth](https://github.com/PrismarineJS/prismarine-auth#authflow) or an object with the following properties:
     - **username** - The username of the account to use for the session | default: 'BedrockPortal'
     - **cache** - The cache directory to use for the session | default: './'
     - **options** - Options for the Authflow instance from [prismarine-auth](https://github.com/PrismarineJS/prismarine-auth#authflow)
-  - **updatePresence** - Whether to update the presence of the authenticated account making it appear as if they are playing Minecraft | default: true
+  - **peers** - Additional accounts that should be connected to the session. Each entry can be either an Authflow instance or an object with the same shape as **host**. | default: []
+  - **updatePresence** - Whether to update the presence of the authenticated account making it appear as if they are playing Minecraft. Will also update the presence of any connected peers. | default: true
   - **world** - The world config to use for the session. Changes the session card which is displayed in the Minecraft client. (optional)
 	  - **hostName** - string
 	  - **name** - string
@@ -57,9 +58,36 @@ const main = async () => {
 main();
 ```
 
+### Use multiple joinable accounts
+```js
+const { BedrockPortal, Modules } = require('bedrock-portal')
+const { Titles } = require('prismarine-auth')
+
+const main = async () => {
+  const portal = new BedrockPortal({
+    ip: 'your.server.ip',
+    port: 19132,
+    peers: [
+      { username: 'account1' },
+      { username: 'account2' },
+    ],
+  })
+
+  portal.use(Modules.AutoFriendAdd, {
+    inviteOnAdd: true,
+  })
+
+  await portal.start()
+}
+
+main()
+```
+
 ## Modules
 
 Modules are used to extend the functionality of the BedrockPortal class. **Modules should be initialised before calling the `start` method.**
+
+Modules that operate on Xbox accounts use the primary **host** account and any configured **peers** automatically.
 
 ### ServerFormList
 
@@ -98,41 +126,6 @@ const main = async () => {
 
 main()
 ```
-
-### MultipleAccounts
-
-Allows the portal to use multiple accounts to redirect players to the server. `#.use(Modules.MultipleAccounts, options);`
-
-Options:
-- **accounts**: Authflow[] - An array of authflows from [prismarine-auth](https://github.com/PrismarineJS/prismarine-auth), these accounts are automatically added to the host session and allows players to add them as a friend to join the game. (required)
-
-```js
-const { Authflow, Titles } = require('prismarine-auth')
-const { BedrockPortal, Modules } = require('bedrock-portal')
-
-const main = async () => {
-  const portal = new BedrockPortal( {
-    ip: 'your.server.ip',
-    port: 19132,
-  })
-
-  portal.use(Modules.AutoFriendAdd, {
-    inviteOnAdd: true,
-  })
-
-  portal.use(Modules.MultipleAccounts, {
-    accounts: [
-      new Authflow('account1', './', { authTitle: Titles.MinecraftIOS, deviceType: 'iOS', flow: 'sisu' }),
-      new Authflow('account2', './', { authTitle: Titles.MinecraftIOS, deviceType: 'iOS', flow: 'sisu' }),
-    ],
-  })
-
-  await portal.start()
-}
-
-main()
-```
-
 
 ### RedirectFromRealm
 

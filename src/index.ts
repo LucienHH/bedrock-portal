@@ -6,7 +6,7 @@ import { v4 as uuidV4 } from 'uuid'
 import { EventResponse } from 'xbox-rta'
 import { TypedEmitter } from 'tiny-typed-emitter'
 import { Server } from 'bedrock-portal-nethernet'
-import { Authflow, CacheFactory, MicrosoftAuthFlowOptions, Titles } from 'prismarine-auth'
+import { Authflow, CacheFactory, MicrosoftAuthFlowOptions, Titles, ServerDeviceCodeResponse } from 'prismarine-auth'
 
 import Host from './classes/Host'
 import Player from './classes/Player'
@@ -19,7 +19,6 @@ import eventHandler from './handlers/Event'
 import AutoFriendAdd from './modules/autoFriendAdd'
 import InviteOnMessage from './modules/inviteOnMessage'
 import RedirectFromRealm from './modules/redirectFromRealm'
-import MultipleAccounts from './modules/multipleAccounts'
 import AutoFriendAccept from './modules/autoFriendAccept'
 import UpdateMemberCount from './modules/updateMemberCount'
 import ServerFromList from './modules/serverFormList'
@@ -30,9 +29,10 @@ import { getRandomUint64, isXuid } from './common/util'
 const debug = debugFn('bedrock-portal')
 
 type AuthflowOptions = {
-  username: string;
-  cache: string | CacheFactory;
-  options: MicrosoftAuthFlowOptions;
+  username?: string;
+  cache?: string | CacheFactory;
+  options?: MicrosoftAuthFlowOptions;
+  onMsaCode?: (res: ServerDeviceCodeResponse) => void;
 };
 
 type BedrockPortalOptions = {
@@ -81,13 +81,19 @@ type BedrockPortalOptions = {
   updatePresence: boolean,
 
   /**
-   * The authentication flow to use for the session.
+   * The authflow options or authflow instance to use for the host account.
    */
-  authflow: AuthflowOptions | Authflow,
+  host: AuthflowOptions | Authflow,
 
   /**
-   * The world config to use for the session. Changes the session card which is displayed in the Minecraft client
-   */
+    * Additional accounts which are connected to the session and can be used to join the portal..
+    * @default []
+    */
+  peers: (AuthflowOptions | Authflow)[],
+
+  /**
+ * The world config to use for the session. Changes the session card which is displayed in the Minecraft client
+ */
   world: {
 
 
@@ -152,9 +158,21 @@ interface PortalEvents {
   memberCountUpdate: (data: { online: number, max: number, cycle: number }) => void
 }
 
-export class BedrockPortal extends TypedEmitter<PortalEvents> {
+const getDefaultAuthflowOptions = (options: AuthflowOptions = {}): AuthflowOptions => ({
+  username: 'BedrockPortal',
+  cache: './',
+  options: {
+    authTitle: Titles.MinecraftIOS,
+    flow: 'sisu',
+    deviceType: 'iOS',
+  },
+  onMsaCode: (res: ServerDeviceCodeResponse) => {
+    console.log(`${options.username} - ${res.message}`)
+  },
+  ...options,
+})
 
-  public authflow: Authflow
+export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   public host: Host
 
@@ -163,6 +181,8 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
   public session: { name: string }
 
   public players: Map<string, Player>
+
+  public peers: Map<string, Host>
 
   public modules: Map<string, Module> = new Map()
 
@@ -178,16 +198,8 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
       webRTCNetworkId: getRandomUint64(),
       updatePresence: true,
       ...options,
-      authflow: options.authflow instanceof Authflow ? options.authflow : {
-        username: 'BedrockPortal',
-        cache: './',
-        options: {
-          authTitle: Titles.MinecraftIOS,
-          flow: 'sisu',
-          deviceType: 'iOS',
-        },
-        ...options.authflow,
-      },
+      host: options.host instanceof Authflow ? options.host : getDefaultAuthflowOptions(options.host),
+      peers: options.peers ? options.peers.map(peer => peer instanceof Authflow ? peer : getDefaultAuthflowOptions(peer)) : [],
       world: {
         hostName: 'Bedrock Portal v1.0.0',
         name: 'By LucienHH',
@@ -202,13 +214,16 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
     this.validateOptions(this.options)
 
-    this.authflow = this.options.authflow instanceof Authflow ? this.options.authflow : new Authflow(this.options.authflow.username, this.options.authflow.cache, this.options.authflow.options)
-
-    this.host = new Host(this, this.authflow)
+    this.host = new Host(
+      this,
+      this.options.host instanceof Authflow ? this.options.host : new Authflow(this.options.host.username, this.options.host.cache, this.options.host.options, this.options.host.onMsaCode),
+    )
 
     this.session = { name: '' }
 
     this.players = new Map()
+
+    this.peers = new Map()
 
     this.modules = new Map()
   }
@@ -229,11 +244,13 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
     this.session.name = uuidV4()
 
-    await this.server.listen(this.authflow, this.options.webRTCNetworkId)
+    await this.server.listen(this.host.authflow, this.options.webRTCNetworkId)
 
     this.server.on('connect', (client) => this.onServerConnection(client))
 
     const session = await this.createAndPublishSession()
+
+    await this.connectPeers()
 
     this.host.rta!.on('event', (event) => {
       eventHandler(this, event)
@@ -256,14 +273,16 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    */
   async end(resume = false) {
 
-    await this.host.disconnect()
-
     if (this.modules) {
       for (const mod of this.modules.values()) {
         debug(`Stopping module: ${mod.name}`)
         await mod.stop()
       }
     }
+
+    await this.disconnectPeers()
+
+    await this.host.disconnect()
 
     debug(`Abandoned session, name: ${this.session.name} - Resume: ${resume}`)
 
@@ -277,6 +296,10 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    */
   getSessionMembers() {
     return this.players
+  }
+
+  getHostAndPeers() {
+    return [this.host, ...this.peers.values()]
   }
 
   /**
@@ -403,6 +426,67 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     return session
   }
 
+  private async connectPeers() {
+
+    for (const account of this.options.peers) {
+
+      let peer: Host | null = null
+
+      try {
+
+        peer = new Host(this, account instanceof Authflow ? account : new Authflow(account.username, account.cache, account.options, account.onMsaCode))
+
+        await peer.connect()
+
+        if (!peer.profile || !peer.connectionId) {
+          throw Error(`Failed to connect to ${account.username}`)
+        }
+
+        debug(`Connected ${peer.profile.gamertag}`)
+
+        const hostAddPeer = await this.host.rest.addXboxFriend(peer.profile.xuid)
+          .then(() => null)
+          .catch(error => error)
+
+        const peerAddHost = await peer.rest.addXboxFriend(this.host.profile!.xuid)
+          .then(() => null)
+          .catch(error => error)
+
+        if (hostAddPeer || peerAddHost) {
+          if (hostAddPeer) debug(`Failed to add ${peer.profile.gamertag} as a friend - ${hostAddPeer.message}`)
+          if (peerAddHost) debug(`Failed to add ${this.host.profile!.gamertag} as a friend - ${peerAddHost.message}`)
+          throw Error(`Failed to create friendship between ${this.host.profile!.gamertag} and ${peer.profile.gamertag}`)
+        }
+
+        await peer.rest.addConnection(this.session.name, peer.profile.xuid, peer.connectionId, peer.subscriptionId)
+
+        await peer.rest.setActivity(this.session.name)
+
+        this.peers.set(peer.profile.xuid, peer)
+
+      }
+      catch (error: any) {
+        debug(`Failed to initialise ${account.username} - ${error.message}`)
+
+        if (peer) {
+          await peer.disconnect()
+            .catch((err) => debug(`Failed to disconnect ${peer?.authflow.username ?? account.username}`, err))
+        }
+      }
+
+    }
+  }
+
+  private async disconnectPeers() {
+    for (const peer of this.peers.values()) {
+
+      await peer.disconnect()
+        .catch((err) => debug(`Failed to disconnect ${peer.authflow.username}`, err))
+    }
+
+    this.peers.clear()
+  }
+
   private createSessionBody(): SessionRequest {
 
     if (!this.host.profile || !this.host.connectionId) throw new Error('No session owner')
@@ -479,7 +563,6 @@ const Modules = {
   AutoFriendAdd,
   InviteOnMessage,
   RedirectFromRealm,
-  MultipleAccounts,
   AutoFriendAccept,
   UpdateMemberCount,
   ServerFromList,

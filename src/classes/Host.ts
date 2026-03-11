@@ -40,51 +40,96 @@ export default class Host {
 
   async connect() {
 
-    const auth = await this.authflow.getXboxToken()
+    let rta: XboxRTA | null = null
+    let presenceInterval: NodeJS.Timeout | null = null
 
-    this.profile = await this.rest.getProfile(auth.userXUID)
+    try {
 
-    this.rta = new XboxRTA(this.authflow)
+      const auth = await this.authflow.getXboxToken()
 
-    await this.rta.connect()
+      const profile = await this.rest.getProfile(auth.userXUID)
 
-    const subResponse = await this.rta.subscribe('https://sessiondirectory.xboxlive.com/connections/')
+      rta = new XboxRTA(this.authflow)
 
-    this.connectionId = (subResponse.data as any).ConnectionId
+      await rta.connect()
 
-    this.rta.on('subscribe', (event: EventResponse) => this.onSubscribe(event))
+      const subResponse = await rta.subscribe('https://sessiondirectory.xboxlive.com/connections/')
 
-    if (this.portal.options.updatePresence) {
-      const updatePresence = () => {
-        if (this.profile) {
-          this.rest.setPresence(this.profile.xuid)
-            .catch(e => { debug('Failed to set presence', e) })
+      const subData = subResponse.data as { ConnectionId?: string }
+
+      this.profile = profile
+      this.rta = rta
+      this.connectionId = subData.ConnectionId ?? null
+      this.subscriptionId = uuidV4()
+
+      this.rta.on('subscribe', (event: EventResponse) => this.onSubscribe(event))
+
+      if (this.portal.options.updatePresence) {
+        const updatePresence = () => {
+          if (this.profile) {
+            this.rest.setPresence(this.profile.xuid)
+              .catch(e => { debug('Failed to set presence', e) })
+          }
         }
+
+        presenceInterval = setInterval(updatePresence, 300000)
+
+        this.presenceInterval = presenceInterval
+
+        updatePresence()
       }
 
-      this.presenceInterval = setInterval(updatePresence, 300000)
+    }
+    catch (e) {
+      if (presenceInterval) {
+        clearInterval(presenceInterval)
+      }
 
-      updatePresence()
+      if (rta) {
+        await rta.destroy()
+          .catch(error => { debug('Failed to destroy host RTA during connect cleanup', error) })
+      }
+
+      this.rta = null
+      this.profile = null
+      this.connectionId = null
+      this.presenceInterval = null
+      this.subscriptionId = uuidV4()
+
+      throw e
     }
 
   }
 
   async disconnect() {
-    if (this.rta) {
-      await this.rta.destroy()
+    const rta = this.rta
+    const presenceInterval = this.presenceInterval
+    const sessionName = this.portal.session.name
+
+    this.rta = null
+    this.profile = null
+    this.connectionId = null
+    this.presenceInterval = null
+    this.subscriptionId = uuidV4()
+
+    if (presenceInterval) {
+      clearInterval(presenceInterval)
     }
 
-    if (this.presenceInterval) {
-      clearInterval(this.presenceInterval)
+    if (rta) {
+      await rta.destroy()
     }
 
-    await this.rest.leaveSession(this.portal.session.name)
-      .catch(() => { debug('Failed to leave session as host') })
+    if (sessionName) {
+      await this.rest.leaveSession(sessionName)
+    }
+
+    debug('Successfully disconnected host', this.authflow.username)
   }
 
   private async onSubscribe(event: EventResponse) {
 
-    const connectionId = (event.data as any)?.ConnectionId
+    const connectionId = (event.data as { ConnectionId?: string } | undefined)?.ConnectionId
 
     if (connectionId && typeof connectionId === 'string') {
 
@@ -92,6 +137,10 @@ export default class Host {
 
       try {
         this.connectionId = connectionId
+
+        if (!this.portal.session.name) {
+          return
+        }
 
         await this.rest.updateConnection(this.portal.session.name, connectionId)
         await this.rest.setActivity(this.portal.session.name)

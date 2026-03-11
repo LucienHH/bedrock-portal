@@ -1,11 +1,10 @@
 import type { BedrockPortal } from '../index'
 import type { FriendRequestPerson } from '../types/peoplehub'
+import type { EventResponse } from 'xbox-rta'
 
 import Module from '../classes/Module'
 import Player from '../classes/Player'
 import Host from '../classes/Host'
-
-import MultipleAccounts from './multipleAccounts'
 
 type EventResponseData = {
   NotificationType: string,
@@ -30,6 +29,8 @@ export default class AutoFriendAccept extends Module {
     conditionToMeet: (request: FriendRequestPerson) => boolean,
   }
 
+  public listeners: Map<string, { host: Host, listener: (event: EventResponse) => Promise<void> }>
+
   constructor(portal: BedrockPortal) {
     super(portal, 'autoFriendAccept', 'Automatically accept friend requests')
 
@@ -37,13 +38,19 @@ export default class AutoFriendAccept extends Module {
       inviteOnAdd: false,
       conditionToMeet: () => true,
     }
+
+    this.listeners = new Map()
   }
 
   async run() {
 
     const addXboxFriend = async (host: Host) => {
 
-      host.rta?.on('event', async (event) => {
+      if (!host.rta || !host.profile || this.listeners.has(host.authflow.username)) {
+        return
+      }
+
+      const listener = async (event: EventResponse) => {
 
         if ((event.data as EventResponseData).NotificationType !== 'IncomingFriendRequestCountChanged') return
 
@@ -70,27 +77,30 @@ export default class AutoFriendAccept extends Module {
           }
         }
 
-      })
-
-      await host.rta?.subscribe(`https://social.xboxlive.com/users/xuid(${host.profile?.xuid})/friends`)
-
-    }
-
-    const multipleAccounts = this.portal.modules.get('multipleAccounts')
-
-    if (multipleAccounts && multipleAccounts instanceof MultipleAccounts) {
-      for (const account of multipleAccounts.peers.values()) {
-        addXboxFriend(account)
-          .catch(error => this.debug(`Error: ${error.message}`, error))
       }
+
+      this.listeners.set(host.authflow.username, { host, listener })
+
+      host.rta.on('event', listener)
+
+      await host.rta.subscribe(`https://social.xboxlive.com/users/xuid(${host.profile.xuid})/friends`)
+
     }
 
-    addXboxFriend(this.portal.host)
-      .catch(error => this.debug(`Error: ${error.message}`, error))
+    for (const account of this.portal.getHostAndPeers()) {
+      addXboxFriend(account)
+        .catch(error => this.debug(`Error: ${error.message}`, error))
+    }
 
   }
 
   async stop() {
     super.stop()
+
+    for (const { host, listener } of this.listeners.values()) {
+      host.rta?.removeListener('event', listener)
+    }
+
+    this.listeners.clear()
   }
 }
