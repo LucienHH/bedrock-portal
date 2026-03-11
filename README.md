@@ -12,6 +12,10 @@ npm install bedrock-portal
 ### Warning
 This package is not meant to be used with your main account. It is meant to be used with alt accounts. If you use this package with your main account, you may be banned from the XSAPI. This package is not affiliated with Mojang or Microsoft.
 
+## Migration
+
+Upgrading from v1.x to v2.x introduces breaking API changes. See [docs/migration-v2.md](docs/migration-v2.md).
+
 ## Usage
 
 ### BedrockPortal(options)
