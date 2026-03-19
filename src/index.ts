@@ -188,7 +188,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   public server = new Server()
 
-  constructor(options: Partial<BedrockPortalOptions> = {}) {
+  constructor(options: Partial<BedrockPortalOptions & { world?: Partial<BedrockPortalOptions["world"]> }> = {}) {
     super()
 
     this.options = {
