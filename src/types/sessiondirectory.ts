@@ -55,7 +55,8 @@ export interface RESTSessionResponse {
       TitleId: number,
       SupportedConnections: SessionConnection[],
       levelId: string,
-      LanGame: boolean
+      LanGame: boolean,
+      nonces?: Record<string, string>
     }
   },
 
@@ -101,8 +102,9 @@ export interface SessionConnection {
   ConnectionType: number,
   HostIpAddress: string,
   HostPort: number,
-  NetherNetId: bigint,
-  WebRTCNetworkId: bigint
+  NetherNetId?: bigint,
+  WebRTCNetworkId?: bigint,
+  PmsgId?: string,
 }
 
 export interface SessionRequest {
@@ -128,6 +130,7 @@ export interface SessionRequest {
       LanGame?: boolean,
       TransportLayer?: number,
       WebRTCNetworkId?: bigint,
+      nonces?: Record<string, string>,
       OnlineCrossPlatformGame?: boolean,
       CrossPlayDisabled?: boolean,
       TitleId?: number,

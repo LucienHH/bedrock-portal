@@ -50,6 +50,9 @@ export default class Host {
       const profile = await this.rest.getProfile(auth.userXUID)
 
       rta = new XboxRTA(this.authflow)
+      rta.on('error', (error) => {
+        debug('RTA error', error)
+      })
 
       await rta.connect()
 

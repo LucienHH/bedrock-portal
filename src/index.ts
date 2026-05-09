@@ -2,6 +2,7 @@ import type { RESTSessionResponse, SessionRequest } from './types/sessiondirecto
 import type { Message } from 'xbox-message'
 
 import debugFn from 'debug'
+import { randomBytes } from 'crypto'
 import { v4 as uuidV4 } from 'uuid'
 import { EventResponse } from 'xbox-rta'
 import { TypedEmitter } from 'tiny-typed-emitter'
@@ -81,6 +82,16 @@ type BedrockPortalOptions = {
   updatePresence: boolean,
 
   /**
+   * The Minecraft services player messaging ID to advertise for JSON-RPC signaling.
+   */
+  pmsgId?: string,
+
+  /**
+   * Per-player nonces to publish on the session.
+   */
+  nonces?: Record<string, string>,
+
+  /**
    * The authflow options or authflow instance to use for the host account.
    */
   host: AuthflowOptions | Authflow,
@@ -111,6 +122,11 @@ type BedrockPortalOptions = {
      * The version of the world. Doesn't have to be a real version.
      */
     version: string,
+
+    /**
+     * The level ID to advertise on the session.
+     */
+    levelId?: string,
 
     /**
      * The current player count of the world.
@@ -188,6 +204,10 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   public server = new Server()
 
+  private sessionNonces: Map<string, string> = new Map()
+
+  private sessionNonceUpdatePromise: Promise<void> = Promise.resolve()
+
   constructor(options: Partial<Omit<BedrockPortalOptions, 'world'> & { world?: Partial<BedrockPortalOptions['world']> }> = {}) {
     super()
 
@@ -226,6 +246,10 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     this.peers = new Map()
 
     this.modules = new Map()
+
+    this.on('sessionUpdated', (session) => {
+      this.queueSessionNonceUpdate(session)
+    })
   }
 
   validateOptions(options: BedrockPortalOptions) {
@@ -251,6 +275,14 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     const session = await this.createAndPublishSession()
 
     await this.connectPeers()
+
+    const updatedSession = await this.getSession()
+      .catch((error) => {
+        debug('Failed to refresh session after connecting peers', error)
+        return null
+      })
+
+    if (updatedSession) await this.queueSessionNonceUpdate(updatedSession)
 
     this.host.rta!.on('event', (event) => {
       eventHandler(this, event)
@@ -391,7 +423,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
       client.write('resource_pack_stack', {
         must_accept: false,
         resource_packs: [],
-        game_version: '*',
+        game_version: start_game.game_version,
         experiments: [],
         experiments_previously_used: false,
         has_editor_packs: false,
@@ -408,9 +440,17 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
         client.write('play_status', { status: 'player_spawn' })
 
-        client.once('set_local_player_as_initialized', () => {
+        let transferSent = false
+        const transfer = (reason: string) => {
+          if (transferSent) return
+          transferSent = true
+          debug(`Sending transfer after ${reason}`)
           client.write('transfer', { server_address: this.options.ip, port: this.options.port })
-        })
+        }
+
+        client.once('set_local_player_as_initialized', () => transfer('set_local_player_as_initialized'))
+        client.once('set_player_game_type', () => transfer('set_player_game_type'))
+        setTimeout(() => transfer('fallback-timeout'), 750).unref?.()
       })
 
     })
@@ -418,6 +458,8 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
   }
 
   private async createAndPublishSession() {
+
+    await this.resolvePmsgId()
 
     await this.updateSession(this.createSessionBody())
 
@@ -432,6 +474,78 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
     debug(`Published session, name: ${this.session.name}, ID: ${this.options.webRTCNetworkId}`)
 
     return session
+  }
+
+  private queueSessionNonceUpdate(session: RESTSessionResponse) {
+    this.sessionNonceUpdatePromise = this.sessionNonceUpdatePromise
+      .catch(() => undefined)
+      .then(() => this.updateSessionNoncesFromSession(session))
+      .catch((error) => {
+        debug('Failed to update session nonces', error)
+      })
+
+    return this.sessionNonceUpdatePromise
+  }
+
+  private async updateSessionNoncesFromSession(session: RESTSessionResponse) {
+    if (!this.session.name || !this.host.profile?.xuid) return
+
+    const hostXuid = String(this.host.profile.xuid)
+    const activeXuids = new Set(Object.values(session.members || {})
+      .map((member) => String(member?.constants?.system?.xuid || '').trim())
+      .filter(Boolean))
+    activeXuids.delete(hostXuid)
+
+    const existingSessionNonces = session.properties?.custom?.nonces || {}
+    const nextNonces = new Map<string, string>()
+
+    for (const xuid of Array.from(activeXuids).sort()) {
+      const existing = existingSessionNonces[xuid]
+        || this.sessionNonces.get(xuid)
+        || randomBytes(8).toString('hex')
+      nextNonces.set(xuid, String(existing))
+    }
+
+    const targetNonces = Object.fromEntries(Array.from(nextNonces.entries()).sort(([left], [right]) => left.localeCompare(right)))
+    if (sessionNoncesEqual(existingSessionNonces, targetNonces)) {
+      this.sessionNonces = nextNonces
+      this.options.nonces = targetNonces
+      return
+    }
+
+    await this.updateSession({
+      properties: {
+        custom: {
+          nonces: targetNonces,
+        },
+      },
+    })
+
+    this.sessionNonces = nextNonces
+    this.options.nonces = targetNonces
+    debug(`Updated session nonces for ${nextNonces.size} joined member(s)`)
+  }
+
+  private async resolvePmsgId() {
+    try {
+      const tokenOptions = {
+        version: this.options.world.version,
+        verison: this.options.world.version,
+      }
+      const servicesToken = await this.host.authflow.getMinecraftBedrockServicesToken(tokenOptions)
+      const token = String(servicesToken?.mcToken || '').replace(/^MCToken\s+/i, '')
+      const payload = token.split('.')[1]
+
+      if (!payload) return
+
+      const decoded = JSON.parse(Buffer.from(payload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'))
+      if (decoded?.pmid) {
+        this.options.pmsgId = String(decoded.pmid)
+      }
+    }
+    catch (error) {
+      debug('Failed to resolve Minecraft services PmsgId', error)
+    }
   }
 
   private async connectPeers() {
@@ -463,7 +577,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
         if (hostAddPeer || peerAddHost) {
           if (hostAddPeer) debug(`Failed to add ${peer.profile.gamertag} as a friend - ${hostAddPeer.message}`)
           if (peerAddHost) debug(`Failed to add ${this.host.profile!.gamertag} as a friend - ${peerAddHost.message}`)
-          throw Error(`Failed to create friendship between ${this.host.profile!.gamertag} and ${peer.profile.gamertag}`)
+          debug(`Continuing peer session publish despite friendship sync failure for ${peer.profile.gamertag}`)
         }
 
         await peer.rest.addConnection(this.session.name, peer.profile.xuid, peer.connectionId, peer.subscriptionId)
@@ -517,6 +631,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
           Joinability: joinability.joinability,
           ownerId: this.host.profile.xuid,
           rakNetGUID: '',
+          levelId: String(this.options.world.levelId || 'level'),
           worldType: 'Survival',
           protocol: SessionConfig.MinecraftProtocolVersion,
           BroadcastSetting: joinability.broadcastSetting,
@@ -524,17 +639,17 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
           CrossPlayDisabled: false,
           TitleId: 0,
           TransportLayer: 2,
-          LanGame: true,
-          WebRTCNetworkId: this.options.webRTCNetworkId,
+          LanGame: false,
           isHardcore: this.options.world.isHardcore,
           isEditorWorld: this.options.world.isEditor,
+          nonces: this.options.nonces || {},
           SupportedConnections: [
             {
-              ConnectionType: 3,
+              ConnectionType: 7,
               HostIpAddress: '',
               HostPort: 0,
-              WebRTCNetworkId: this.options.webRTCNetworkId,
               NetherNetId: this.options.webRTCNetworkId,
+              PmsgId: String(this.options.pmsgId || ''),
             },
           ],
         },
@@ -577,3 +692,11 @@ const Modules = {
 }
 
 export { Modules }
+
+function sessionNoncesEqual(left: Record<string, string> = {}, right: Record<string, string> = {}) {
+  const leftKeys = Object.keys(left).sort()
+  const rightKeys = Object.keys(right).sort()
+  if (leftKeys.length !== rightKeys.length) return false
+
+  return leftKeys.every((key, index) => key === rightKeys[index] && String(left[key]) === String(right[key]))
+}
