@@ -398,9 +398,17 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
       })
 
       client.once('resource_pack_client_response', () => {
+        client.write('voxel_shapes', {
+          shapes: [],
+          name_map: [],
+          custom_shape_count: 0,
+        })
+
         client.write('start_game', start_game)
 
-        client.once('set_player_game_type', () => {
+        client.write('play_status', { status: 'player_spawn' })
+
+        client.once('set_local_player_as_initialized', () => {
           client.write('transfer', { server_address: this.options.ip, port: this.options.port })
         })
       })
@@ -510,7 +518,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
           ownerId: this.host.profile.xuid,
           rakNetGUID: '',
           worldType: 'Survival',
-          protocol: SessionConfig.MiencraftProtocolVersion,
+          protocol: SessionConfig.MinecraftProtocolVersion,
           BroadcastSetting: joinability.broadcastSetting,
           OnlineCrossPlatformGame: true,
           CrossPlayDisabled: false,
