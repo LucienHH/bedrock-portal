@@ -21,11 +21,10 @@
   },
   "homepage": "https://github.com/LucienHH/bedrock-portal#readme",
   "dependencies": {
-    "axios": "^1.0.0",
     "bedrock-portal-nethernet": "^2.0.0",
     "debug": "^4.3.4",
     "json-bigint": "^1.0.0",
-    "prismarine-auth": "github:LucienHH/prismarine-auth#playfab",
+    "prismarine-auth": "^3.1.1",
     "tiny-typed-emitter": "^2.1.0",
     "uuid": "^9.0.0",
     "xbox-message": "^0.2.0",
@@ -40,6 +39,6 @@
     "@typescript-eslint/parser": "^6.17.0",
     "bedrock-portal": "file:.",
     "eslint": "^8.33.0",
-    "typescript": "^5.3.3"
+    "typescript": "^6.0.3"
   }
 }

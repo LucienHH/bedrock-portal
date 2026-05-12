@@ -1,5 +1,3 @@
-import axios, { AxiosRequestConfig } from 'axios'
-
 import { Authflow } from 'prismarine-auth'
 import { parse, stringify } from 'json-bigint'
 
@@ -12,81 +10,67 @@ import { RESTSocialPostBulkFriendRequestResponse } from './types/social'
 import { isXuid } from './common/util'
 
 
-type RequestHeaders = {
-  [x: string]: string | boolean | number | undefined;
+type RestOptions = {
+  headers?: HeadersInit,
 }
 
-type MethodRequestConfig = {
-  relyingParty?: string,
+type FetchJsonInit = RequestInit & {
   contractVersion?: string,
-  params?: AxiosRequestConfig['params'],
-  data?: AxiosRequestConfig['data'],
-  headers?: RequestHeaders,
-};
-
-type RequestConfig = MethodRequestConfig & {
-  url: string,
-};
+}
 
 export default class Rest {
 
   public auth: Authflow
 
-  public options: {
-    headers?: RequestHeaders,
-  }
+  public options: RestOptions
 
-  constructor(authflow: Authflow, options = {}) {
+  constructor(authflow: Authflow, options: RestOptions = {}) {
     this.auth = authflow
     this.options = options
   }
 
-  async get(url: string, config: MethodRequestConfig = {}) {
-    return await this._request('GET', { url, ...config })
-  }
-
-  async post(url: string, config: MethodRequestConfig = {}) {
-    return await this._request('POST', { url, ...config })
-  }
-
-  async put(url: string, config: MethodRequestConfig = {}) {
-    return await this._request('PUT', { url, ...config })
-  }
-
-  async delete(url: string, config: MethodRequestConfig = {}) {
-    return await this._request('DELETE', { url, ...config })
-  }
-
-  async _request(method: 'GET' | 'POST' | 'PUT' | 'DELETE', config: RequestConfig) {
+  private async fetchJson<T = unknown>(url: string, init: FetchJsonInit = {}) {
+    const { contractVersion, headers: requestHeaders, ...requestInit } = init
     const auth = await this.auth.getXboxToken('http://xboxlive.com')
 
-    const payload = {
-      method,
-      url: config.url,
-      headers: {
-        'authorization': `XBL3.0 x=${auth.userHash};${auth.XSTSToken}`,
-        'content-type': 'application/json',
-        'accept-language': 'en-US',
-        ...config.headers,
-      } as RequestHeaders,
-      data: undefined,
-      params: undefined,
+    const headers = new Headers({
+      'authorization': `XBL3.0 x=${auth.userHash};${auth.XSTSToken}`,
+      'accept-language': 'en-US',
+    })
+
+    for (const [key, value] of new Headers(this.options.headers).entries()) {
+      headers.set(key, value)
     }
 
-    if (config.contractVersion) payload.headers['x-xbl-contract-version'] = config.contractVersion
-    if (config.params) payload.params = config.params
-    if (config.data) payload.data = config.data
+    for (const [key, value] of new Headers(requestHeaders).entries()) {
+      headers.set(key, value)
+    }
 
-    return axios({
-      ...payload,
-      transformResponse: [data => data ? parse(data) : undefined],
-      transformRequest: [data => data ? stringify(data) : undefined],
-    }).then(e => e.data)
+    if (requestInit.body !== undefined && !headers.has('content-type')) {
+      headers.set('content-type', 'application/json')
+    }
+
+    if (contractVersion) headers.set('x-xbl-contract-version', contractVersion)
+
+    const response = await fetch(url, {
+      ...requestInit,
+      headers,
+    })
+
+    const body = await response.text()
+
+    if (!response.ok) {
+      const detail = body ? `: ${body}` : ''
+      throw new Error(`Request failed with status ${response.status} ${response.statusText}${detail}`)
+    }
+
+    return (body ? parse(body) : undefined) as T
   }
 
   async sendHandle(payload: SessionHandlePayload) {
-    return this.post('https://sessiondirectory.xboxlive.com/handles', {
-      data: payload,
+    return this.fetchJson('https://sessiondirectory.xboxlive.com/handles', {
+      method: 'POST',
+      body: stringify(payload),
       contractVersion: '107',
     })
   }
@@ -110,7 +94,7 @@ export default class Rest {
   }
 
   async getSession(sessionName: string) {
-    const response: RESTSessionResponse = await this.get(`https://sessiondirectory.xboxlive.com/serviceconfigs/${SessionConfig.MinecraftSCID}/sessionTemplates/${SessionConfig.MinecraftTemplateName}/sessions/${sessionName}`, {
+    const response = await this.fetchJson<RESTSessionResponse>(`https://sessiondirectory.xboxlive.com/serviceconfigs/${SessionConfig.MinecraftSCID}/sessionTemplates/${SessionConfig.MinecraftTemplateName}/sessions/${sessionName}`, {
       contractVersion: '107',
     })
 
@@ -118,8 +102,9 @@ export default class Rest {
   }
 
   async updateSession(sessionName: string, payload: SessionRequest) {
-    const response: RESTSessionResponse = await this.put(`https://sessiondirectory.xboxlive.com/serviceconfigs/${SessionConfig.MinecraftSCID}/sessionTemplates/${SessionConfig.MinecraftTemplateName}/sessions/${sessionName}`, {
-      data: payload,
+    const response = await this.fetchJson<RESTSessionResponse>(`https://sessiondirectory.xboxlive.com/serviceconfigs/${SessionConfig.MinecraftSCID}/sessionTemplates/${SessionConfig.MinecraftTemplateName}/sessions/${sessionName}`, {
+      method: 'PUT',
+      body: stringify(payload),
       contractVersion: '107',
     })
 
@@ -163,59 +148,80 @@ export default class Rest {
 
     if (!isXuid(input)) {
       const target = input === 'me' ? 'me' : `gt(${encodeURIComponent(input)})`
-      const response = await this.get(`https://profile.xboxlive.com/users/${target}/settings`, { contractVersion: '2' })
+      const response = await this.fetchJson<{ profileUsers: Array<{ id: string }> }>(`https://profile.xboxlive.com/users/${target}/settings`, { contractVersion: '2' })
       xuid = response.profileUsers[0]!.id
     }
 
-    const response: RESTPeoplehubResponse = await this.get(`https://peoplehub.xboxlive.com/users/me/people/xuids(${xuid})/decoration/detail,preferredcolor`, { contractVersion: '5' })
+    const response = await this.fetchJson<RESTPeoplehubResponse>(`https://peoplehub.xboxlive.com/users/me/people/xuids(${xuid})/decoration/detail,preferredcolor`, { contractVersion: '5' })
     return response.people.shift()!
   }
 
   async getProfiles(xuids: string[]) {
-    const response: RESTPeoplehubResponse = await this.post('https://peoplehub.xboxlive.com/users/me/people/batch/decoration/detail,preferredcolor', { data: { xuids }, contractVersion: '5' })
+    const response = await this.fetchJson<RESTPeoplehubResponse>('https://peoplehub.xboxlive.com/users/me/people/batch/decoration/detail,preferredcolor', {
+      method: 'POST',
+      body: stringify({ xuids }),
+      contractVersion: '5',
+    })
     return response.people
   }
 
   async getXboxFriends() {
-    const response: RESTPeoplehubResponse = await this.get('https://peoplehub.xboxlive.com/users/me/people/social/decoration/detail,preferredColor,follower', { contractVersion: '5' })
+    const response = await this.fetchJson<RESTPeoplehubResponse>('https://peoplehub.xboxlive.com/users/me/people/social/decoration/detail,preferredColor,follower', { contractVersion: '5' })
     return response.people
   }
 
   async getXboxFollowers() {
-    const response: RESTPeoplehubResponse = await this.get('https://peoplehub.xboxlive.com/users/me/people/followers/decoration/detail,preferredColor,follower', { contractVersion: '5' })
+    const response = await this.fetchJson<RESTPeoplehubResponse>('https://peoplehub.xboxlive.com/users/me/people/followers/decoration/detail,preferredColor,follower', { contractVersion: '5' })
     return response.people
   }
 
   async getFriendRequestsReceived() {
-    const response: RESTPeoplehubGetFriendRequestResponse = await this.get('https://peoplehub.xboxlive.com/users/me/people/friendrequests(received)/decoration/detail,preferredColor,follower', { contractVersion: '7' })
+    const response = await this.fetchJson<RESTPeoplehubGetFriendRequestResponse>('https://peoplehub.xboxlive.com/users/me/people/friendrequests(received)/decoration/detail,preferredColor,follower', { contractVersion: '7' })
     return response.people
   }
 
   async acceptFriendRequests(xuids: string[]) {
-    const response: RESTSocialPostBulkFriendRequestResponse = await this.post('https://social.xboxlive.com/bulk/users/me/people/friends/v2?method=add', { data: { xuids }, contractVersion: '3' })
+    const response = await this.fetchJson<RESTSocialPostBulkFriendRequestResponse>('https://social.xboxlive.com/bulk/users/me/people/friends/v2?method=add', {
+      method: 'POST',
+      body: stringify({ xuids }),
+      contractVersion: '3',
+    })
     return response
   }
 
   async declineFriendRequests(xuids: string[]) {
-    const response: RESTSocialPostBulkFriendRequestResponse = await this.post('https://social.xboxlive.com/bulk/users/me/people/friends/v2?method=remove', { data: { xuids }, contractVersion: '3' })
+    const response = await this.fetchJson<RESTSocialPostBulkFriendRequestResponse>('https://social.xboxlive.com/bulk/users/me/people/friends/v2?method=remove', {
+      method: 'POST',
+      body: stringify({ xuids }),
+      contractVersion: '3',
+    })
     return response
   }
 
   async addXboxFriend(xuid: string) {
-    await this.put(`https://social.xboxlive.com/users/me/people/xuid(${xuid})`, { contractVersion: '2' })
+    await this.fetchJson(`https://social.xboxlive.com/users/me/people/xuid(${xuid})`, {
+      method: 'PUT',
+      contractVersion: '2',
+    })
   }
 
   async removeXboxFriend(xuid: string) {
-    await this.delete(`https://social.xboxlive.com/users/me/people/xuid(${xuid})`, { contractVersion: '2' })
+    await this.fetchJson(`https://social.xboxlive.com/users/me/people/xuid(${xuid})`, {
+      method: 'DELETE',
+      contractVersion: '2',
+    })
   }
 
   async getInboxMessages(inbox: 'primary' | 'secondary') {
-    const response: RESTXblmessageInboxResponse = await this.get(`https://xblmessaging.xboxlive.com/network/xbox/users/me/inbox/${inbox}`, { contractVersion: '1' })
+    const response = await this.fetchJson<RESTXblmessageInboxResponse>(`https://xblmessaging.xboxlive.com/network/xbox/users/me/inbox/${inbox}`, { contractVersion: '1' })
     return response
   }
 
   async setPresence(xuid: string) {
-    await this.post(`https://userpresence.xboxlive.com/users/xuid(${xuid})/devices/current/titles/current`, { data: { state: 'active' } })
+    await this.fetchJson(`https://userpresence.xboxlive.com/users/xuid(${xuid})/devices/current/titles/current`, {
+      method: 'POST',
+      body: stringify({ state: 'active' }),
+    })
   }
 
 }
