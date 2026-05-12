@@ -58,7 +58,7 @@ export const start_game = {
   persona_disabled: false,
   custom_skins_disabled: false,
   emote_chat_muted: false,
-  game_version: '1.26.20',
+  game_version: '*',
   limited_world_width: 16,
   limited_world_length: 16,
   is_new_nether: false,
@@ -80,7 +80,7 @@ export const start_game = {
   block_properties: [],
   multiplayer_correlation_id: '<raknet>b31f-884c-6f27-c0fb',
   server_authoritative_inventory: true,
-  engine: '1.26.20',
+  engine: '1.26.10',
   property_data: {
     type: 'compound',
     name: '',
