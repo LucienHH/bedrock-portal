@@ -1,8 +1,9 @@
 {
 	"compilerOptions": {
-		"target": "ES2023",
-        "moduleResolution": "Node",
-        "module": "CommonJS",
+		"target": "ESNext",
+		"moduleResolution": "bundler",
+		"module": "CommonJS",
+		"rootDir": "./src",
 		"outDir": "./dist",
 		"strict": true,
 		"sourceMap": false,
@@ -16,6 +17,10 @@
 		"esModuleInterop": true,
 		"declaration": true
 	},
-	"include": ["./src/**/*"],
-	"exclude": ["./node_modules"]
+	"include": [
+		"./src/**/*"
+	],
+	"exclude": [
+		"node_modules"
+	]
 }
