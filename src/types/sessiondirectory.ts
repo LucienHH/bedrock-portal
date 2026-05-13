@@ -102,7 +102,7 @@ export interface SessionConnection {
   HostIpAddress: string,
   HostPort: number,
   NetherNetId: bigint,
-  WebRTCNetworkId: bigint
+  PmsgId: string
 }
 
 export interface SessionRequest {
@@ -133,6 +133,7 @@ export interface SessionRequest {
       TitleId?: number,
       isHardcore?: boolean,
       isEditorWorld?: boolean,
+      nonces?: Record<string, string>,
       SupportedConnections?: SessionConnection[],
     }
   },

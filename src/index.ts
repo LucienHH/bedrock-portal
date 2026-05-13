@@ -1,6 +1,7 @@
 import type { RESTSessionResponse, SessionRequest } from './types/sessiondirectory'
 import type { Message } from 'xbox-message'
 
+import { randomBytes } from 'crypto'
 import debugFn from 'debug'
 import { v4 as uuidV4 } from 'uuid'
 import { EventResponse } from 'xbox-rta'
@@ -178,7 +179,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   public options: BedrockPortalOptions
 
-  public session: { name: string }
+  public session: { name: string, pmsgId: string, nonces: Record<string, string> }
 
   public players: Map<string, Player>
 
@@ -219,7 +220,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
       this.options.host instanceof Authflow ? this.options.host : new Authflow(this.options.host.username, this.options.host.cache, this.options.host.options, this.options.host.onMsaCode),
     )
 
-    this.session = { name: '' }
+    this.session = { name: '', pmsgId: '', nonces: {} }
 
     this.players = new Map()
 
@@ -239,12 +240,20 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
   async start() {
 
     this.players = new Map()
+    this.session.pmsgId = ''
+    this.session.nonces = {}
 
     await this.host.connect()
 
     this.session.name = uuidV4()
 
     await this.server.listen(this.host.authflow, this.options.webRTCNetworkId)
+
+    const pmsgId = this.server.signaling?.pmsgId
+
+    if (!pmsgId) throw new Error('Failed to determine signaling pmsgId')
+
+    this.session.pmsgId = pmsgId
 
     this.server.on('connect', (client) => this.onServerConnection(client))
 
@@ -343,6 +352,41 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    */
   async updateSession(payload: SessionRequest) {
     await this.host.rest.updateSession(this.session.name, payload)
+  }
+
+  async syncSessionNonces(session: RESTSessionResponse) {
+    const hostProfile = this.host.profile
+
+    if (!hostProfile) {
+      return
+    }
+
+    const activeXuids = [...new Set(
+      Object.values(session.members)
+        .map(member => member.constants.system.xuid)
+        .filter(xuid => xuid !== hostProfile.xuid),
+    )].sort()
+
+    const nextNonces = Object.fromEntries(
+      activeXuids.map(xuid => [xuid, this.session.nonces[xuid] ?? randomBytes(8).toString('hex')]),
+    )
+
+    const hasChanges = Object.keys(this.session.nonces).length !== activeXuids.length
+      || activeXuids.some(xuid => this.session.nonces[xuid] !== nextNonces[xuid])
+
+    if (!hasChanges) {
+      return
+    }
+
+    this.session.nonces = nextNonces
+
+    await this.updateSession({
+      properties: {
+        custom: {
+          nonces: nextNonces,
+        },
+      },
+    })
   }
 
   /**
@@ -490,6 +534,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
   private createSessionBody(): SessionRequest {
 
     if (!this.host.profile || !this.host.connectionId) throw new Error('No session owner')
+    if (!this.session.pmsgId) throw new Error('No session connection payload id')
 
     const joinability = JoinabilityConfig[this.options.joinability]
 
@@ -510,7 +555,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
           ownerId: this.host.profile.xuid,
           rakNetGUID: '',
           worldType: 'Survival',
-          protocol: SessionConfig.MiencraftProtocolVersion,
+          protocol: SessionConfig.MinecraftProtocolVersion,
           BroadcastSetting: joinability.broadcastSetting,
           OnlineCrossPlatformGame: true,
           CrossPlayDisabled: false,
@@ -520,13 +565,14 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
           WebRTCNetworkId: this.options.webRTCNetworkId,
           isHardcore: this.options.world.isHardcore,
           isEditorWorld: this.options.world.isEditor,
+          nonces: this.session.nonces,
           SupportedConnections: [
             {
-              ConnectionType: 3,
+              ConnectionType: 7,
               HostIpAddress: '',
               HostPort: 0,
-              WebRTCNetworkId: this.options.webRTCNetworkId,
               NetherNetId: this.options.webRTCNetworkId,
+              PmsgId: this.session.pmsgId,
             },
           ],
         },
