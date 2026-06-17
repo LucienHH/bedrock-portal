@@ -66,6 +66,9 @@ export const start_game = {
     button_name: '',
     link_uri: '',
   },
+  is_logging_chat: false,
+  allow_anonymous_block_drops_in_editor_worlds: false,
+  server_editor_connection_policy: 1,
   experimental_gameplay_override: false,
   chat_restriction_level: 'none',
   disable_player_interactions: false,
@@ -80,7 +83,7 @@ export const start_game = {
   block_properties: [],
   multiplayer_correlation_id: '<raknet>b31f-884c-6f27-c0fb',
   server_authoritative_inventory: true,
-  engine: '1.26.20',
+  engine: '1.26.30',
   property_data: {
     type: 'compound',
     name: '',
