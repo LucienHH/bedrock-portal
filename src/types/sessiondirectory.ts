@@ -55,7 +55,8 @@ export interface RESTSessionResponse {
       TitleId: number,
       SupportedConnections: SessionConnection[],
       levelId: string,
-      LanGame: boolean
+      LanGame: boolean,
+      nonces?: Record<string, string>
     }
   },
 

@@ -189,6 +189,8 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   public server = new Server()
 
+  private nonceSync: Promise<void> = Promise.resolve()
+
   constructor(options: Partial<Omit<BedrockPortalOptions, 'world'> & { world?: Partial<BedrockPortalOptions['world']> }> = {}) {
     super()
 
@@ -351,15 +353,23 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
    * @param payload The payload to update the session with.
    */
   async updateSession(payload: SessionRequest) {
-    await this.host.rest.updateSession(this.session.name, payload)
+    return await this.host.rest.updateSession(this.session.name, payload)
   }
 
-  async syncSessionNonces(session: RESTSessionResponse) {
+  async syncSessionNonces() {
+    const sync = this.nonceSync.then(() => this.syncSessionNoncesInternal())
+    this.nonceSync = sync.then(() => undefined, () => undefined)
+    return await sync
+  }
+
+  private async syncSessionNoncesInternal() {
     const hostProfile = this.host.profile
 
     if (!hostProfile) {
-      return
+      throw new Error('No session owner')
     }
+
+    const session = await this.getSession()
 
     const activeXuids = [...new Set(
       Object.values(session.members)
@@ -375,18 +385,19 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
       || activeXuids.some(xuid => this.session.nonces[xuid] !== nextNonces[xuid])
 
     if (!hasChanges) {
-      return
+      return session
     }
 
-    this.session.nonces = nextNonces
-
-    await this.updateSession({
+    const updatedSession = await this.updateSession({
       properties: {
         custom: {
           nonces: nextNonces,
         },
       },
     })
+
+    this.session.nonces = nextNonces
+    return updatedSession
   }
 
   /**
@@ -418,7 +429,26 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
   onServerConnection = (client: any) => {
 
+    let nonceValidated = false
+
+    client.once('login', () => {
+      const xuid = client.profile?.xuid
+      const nonce = client.skinData?.Nonce
+      const expectedNonce = xuid ? this.session.nonces[xuid] : undefined
+
+      nonceValidated = typeof nonce === 'string' && nonce.length > 0 && nonce === expectedNonce
+      if (!nonceValidated) {
+        debug(`Rejected client with invalid session nonce, xuid: ${xuid ?? 'unknown'}`)
+        client.disconnect('Server authentication error')
+      }
+    })
+
     client.on('join', () => {
+
+      if (!nonceValidated) {
+        client.disconnect('Server authentication error')
+        return
+      }
 
       client.write('resource_packs_info', {
         must_accept: false,

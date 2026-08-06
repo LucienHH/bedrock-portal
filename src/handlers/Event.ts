@@ -13,9 +13,7 @@ export default async (portal: BedrockPortal, event: EventResponse) => {
 
   portal.emit('rtaEvent', event)
 
-  const session = await portal.getSession()
-
-  await portal.syncSessionNonces(session)
+  const session = await portal.syncSessionNonces()
 
   portal.emit('sessionUpdated', session)
 
