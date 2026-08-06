@@ -2,7 +2,7 @@ export const SessionConfig = {
   MinecraftTitleID: '896928775',
   MinecraftSCID: '4fc10100-5f7a-4470-899b-280835760c07',
   MinecraftTemplateName: 'MinecraftLobby',
-  MinecraftProtocolVersion: 1001,
+  MinecraftProtocolVersion: 2168,
 }
 
 export enum Joinability {
@@ -18,7 +18,7 @@ export enum Joinability {
    * Anyone that's a friend or friend of a friend can join/view the session without an invite.
    * @default
    * */
-  FriendsOfFriends = 'friends_of_friends'
+  FriendsOfFriends = 'friends_of_friends',
 }
 
 export const JoinabilityConfig = {
