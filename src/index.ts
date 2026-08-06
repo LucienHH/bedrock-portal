@@ -462,22 +462,40 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
         texture_packs: [],
       })
 
-      client.write('resource_pack_stack', {
-        must_accept: false,
-        resource_packs: [],
-        game_version: '*',
-        experiments: [],
-        experiments_previously_used: false,
-        has_editor_packs: false,
-      })
+      const onResourcePackResponse = (response: { response_status: string }) => {
+        if (response.response_status === 'refused') {
+          client.off('resource_pack_client_response', onResourcePackResponse)
+          client.disconnect('Resource packs refused')
+          return
+        }
 
-      client.once('resource_pack_client_response', () => {
-        client.write('start_game', start_game)
+        if (response.response_status === 'send_packs' || response.response_status === 'have_all_packs') {
+          client.write('resource_pack_stack', {
+            must_accept: false,
+            resource_packs: [],
+            game_version: '*',
+            experiments: [],
+            experiments_previously_used: false,
+            has_editor_packs: false,
+          })
+          return
+        }
 
-        client.once('set_player_game_type', () => {
-          client.write('transfer', { server_address: this.options.ip, port: this.options.port })
+        if (response.response_status !== 'completed') return
+
+        client.off('resource_pack_client_response', onResourcePackResponse)
+        client.once('request_chunk_radius', () => {
+          client.write('transfer', {
+            server_address: this.options.ip,
+            port: this.options.port,
+            reload_world: false,
+            gatherings_configuration: undefined,
+          })
         })
-      })
+        client.write('start_game', start_game)
+      }
+
+      client.on('resource_pack_client_response', onResourcePackResponse)
 
     })
 
