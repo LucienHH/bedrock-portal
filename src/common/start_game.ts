@@ -82,7 +82,7 @@ export const start_game = {
   block_properties: [],
   multiplayer_correlation_id: '<raknet>b31f-884c-6f27-c0fb',
   server_authoritative_inventory: true,
-  engine: '1.26.40',
+  engine: '1.26.50',
   property_data: {
     type: 'compound',
     name: '',
