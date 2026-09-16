@@ -102,3 +102,33 @@ export const start_game = {
   world_identifier: '',
   owner_identifier: '',
 }
+
+export const sendStartGame = (client: { write: (name: string, params: unknown) => void }) => {
+  // The client validates both structure registries before accepting StartGame.
+  const emptyNbtList = {
+    type: 'list',
+    value: {
+      type: 'end',
+      value: [],
+    },
+  }
+
+  client.write('jigsaw_structure_data', {
+    structure_data: {
+      type: 'compound',
+      name: '',
+      value: {
+        processors: emptyNbtList,
+        template_pools: emptyNbtList,
+        jigsaws: emptyNbtList,
+        structure_sets: emptyNbtList,
+      },
+    },
+  })
+  client.write('voxel_shapes', {
+    shapes: [],
+    name_map: [],
+    custom_shape_count: 0,
+  })
+  client.write('start_game', start_game)
+}

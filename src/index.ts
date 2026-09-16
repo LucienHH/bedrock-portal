@@ -24,7 +24,7 @@ import AutoFriendAccept from './modules/autoFriendAccept'
 import UpdateMemberCount from './modules/updateMemberCount'
 import ServerFromList from './modules/serverFormList'
 
-import { start_game } from './common/start_game'
+import { sendStartGame } from './common/start_game'
 import { getRandomUint64, isXuid } from './common/util'
 
 const debug = debugFn('bedrock-portal')
@@ -492,7 +492,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
             gatherings_configuration: undefined,
           })
         })
-        client.write('start_game', start_game)
+        sendStartGame(client)
       }
 
       client.on('resource_pack_client_response', onResourcePackResponse)

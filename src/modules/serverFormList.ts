@@ -2,7 +2,7 @@ import { BedrockPortal } from '..'
 
 import Module from '../classes/Module'
 
-import { start_game } from '../common/start_game'
+import { sendStartGame } from '../common/start_game'
 
 type FormResponsePacket = {
   form_id: number,
@@ -112,20 +112,34 @@ export default class ServerFromList extends Module {
       texture_packs: [],
     })
 
-    client.write('resource_pack_stack', {
-      must_accept: false,
-      resource_packs: [],
-      game_version: '*',
-      experiments: [],
-      experiments_previously_used: false,
-      has_editor_packs: false,
-    })
+    const onResourcePackResponse = (response: { response_status: string }) => {
+      if (response.response_status === 'refused') {
+        client.off('resource_pack_client_response', onResourcePackResponse)
+        client.disconnect('Resource packs refused')
+        return
+      }
 
-    client.once('resource_pack_client_response', async () => {
-      client.write('start_game', start_game)
+      if (response.response_status === 'send_packs' || response.response_status === 'have_all_packs') {
+        client.write('resource_pack_stack', {
+          must_accept: false,
+          resource_packs: [],
+          game_version: '*',
+          experiments: [],
+          experiments_previously_used: false,
+          has_editor_packs: false,
+        })
+        return
+      }
+
+      if (response.response_status !== 'completed') return
+
+      client.off('resource_pack_client_response', onResourcePackResponse)
+      sendStartGame(client)
       client.write('item_registry', { itemstates: [] })
       client.write('play_status', { status: 'player_spawn' })
-    })
+    }
+
+    client.on('resource_pack_client_response', onResourcePackResponse)
 
     client.on('modal_form_response', (p: FormResponsePacket) => this.handleFormResponse(p, client))
   }
