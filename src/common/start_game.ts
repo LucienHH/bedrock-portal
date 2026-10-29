@@ -81,7 +81,10 @@ export const start_game = {
   is_trial: false,
   rewind_history_size: 40,
   server_authoritative_block_breaking: true,
-  current_tick: [],
+  current_tick: [
+    0,
+    40,
+  ],
   enchantment_seed: 905277925,
   block_properties: [],
   multiplayer_correlation_id: '<nethernet>0e93-a670-dee9-0022',
@@ -92,7 +95,10 @@ export const start_game = {
     name: '',
     value: {},
   },
-  block_pallette_checksum: [],
+  block_pallette_checksum: [
+    1151028610,
+    2443757986,
+  ],
   world_template_id: '00000000-0000-0000-0000-000000000000',
   client_side_generation: false,
   block_network_ids_are_hashes: true,
