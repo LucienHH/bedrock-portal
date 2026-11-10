@@ -484,14 +484,28 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
         if (response.response_status !== 'completed') return
 
         client.off('resource_pack_client_response', onResourcePackResponse)
-        client.once('request_chunk_radius', () => {
-          client.write('transfer', {
-            server_address: this.options.ip,
-            port: this.options.port,
-            reload_world: false,
-            gatherings_configuration: undefined,
+
+        // Bring the client into a fully spawned state before issuing Transfer.
+        // Without the intermediate chunk_radius_updated + player_spawn + the wait for
+        // set_local_player_as_initialised, consoles receive Transfer too early and 
+        // crashes/freezes during the handoff.
+        client.once('request_chunk_radius', (req: { chunk_radius?: number }) => {
+          client.write('chunk_radius_update', {
+            chunk_radius: req?.chunk_radius ?? 12,
           })
+          client.write('play_status', { status: 'player_spawn' })
+          client.write('creative_content', { groups: [], items: [] })
+
+          client.once('set_local_player_as_initialized', async () => {
+            client.write('transfer', {
+              server_address: this.options.ip,
+              port: this.options.port,
+              reload_world: false,
+              gatherings_configuration: undefined,
+            })
+          })          
         })
+
         sendStartGame(client)
       }
 
