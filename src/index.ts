@@ -487,7 +487,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
 
         // Bring the client into a fully spawned state before issuing Transfer.
         // Without the intermediate chunk_radius_updated + player_spawn + the wait for
-        // set_local_player_as_initialised, consoles receive Transfer too early and 
+        // set_local_player_as_initialised, consoles receive Transfer too early and
         // crashes/freezes during the handoff.
         client.once('request_chunk_radius', (req: { chunk_radius?: number }) => {
           client.write('chunk_radius_update', {
@@ -503,7 +503,7 @@ export class BedrockPortal extends TypedEmitter<PortalEvents> {
               reload_world: false,
               gatherings_configuration: undefined,
             })
-          })          
+          })
         })
 
         sendStartGame(client)
